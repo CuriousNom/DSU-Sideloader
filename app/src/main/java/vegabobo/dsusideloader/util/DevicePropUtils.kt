@@ -40,6 +40,10 @@ class DevicePropUtils {
             return if (size > 0L) "${size / 1024} KB" else "4 KB"
         }
 
+        fun isDsuRunning(): Boolean {
+            return getSystemProperty("ro.gsid.image_installed") == "1"
+        }
+
         private fun getSystemProperty(key: String): String {
             val systemPropertiesClass = Class.forName("android.os.SystemProperties")
             val value = HiddenApiBypass.invoke(systemPropertiesClass, null, "get", key)

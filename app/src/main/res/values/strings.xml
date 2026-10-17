@@ -30,6 +30,12 @@
     <string name="kernel_page_size">Kernel page size</string>
     <string name="kernel_page_size_desc">System page size: %s</string>
 
+    <!-- Quick Settings Tile -->
+    <string name="dsu_tile_label">Dynamic System</string>
+    <string name="dsu_tile_running">Running (Tap to open)</string>
+    <string name="dsu_tile_installed">Installed (Tap to manage)</string>
+    <string name="dsu_tile_inactive">Idle (Tap to sideload)</string>
+
     <!-- Installation card -->
     <string name="select_gsi_info">Select a file to be installed</string>
     <string name="dsu_already_installed">A DSU installation is already present.</string>
