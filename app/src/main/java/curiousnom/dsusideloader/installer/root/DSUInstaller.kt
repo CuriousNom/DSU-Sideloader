@@ -61,18 +61,30 @@ class DSUInstaller(
         }
     }
 
-    private val UNSUPPORTED_PARTITIONS: List<String> = listOf(
-        "vbmeta",
+    private val UNSUPPORTED_PARTITIONS: Set<String> = setOf(
         "boot",
-        "userdata",
+        "vendor_boot",
+        "init_boot",
+        "recovery",
         "dtbo",
+        "userdata",
         "super_empty",
         "system_other",
         "scratch",
+        "metadata",
+        "misc",
+        "persist",
+        "modem",
+        "radio",
     )
 
-    private fun isPartitionSupported(partitionName: String): Boolean =
-        !UNSUPPORTED_PARTITIONS.contains(partitionName)
+    private fun isPartitionSupported(partitionName: String): Boolean {
+        val name = partitionName.lowercase()
+        if (name.startsWith("vbmeta")) {
+            return false
+        }
+        return !UNSUPPORTED_PARTITIONS.contains(name)
+    }
 
     private fun getFdDup(sharedMemory: SharedMemory): ParcelFileDescriptor {
         return HiddenApiBypass.invoke(
