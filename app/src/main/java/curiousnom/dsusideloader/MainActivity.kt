@@ -119,11 +119,15 @@ class MainActivity : ComponentActivity(), Shizuku.OnRequestPermissionResultListe
     companion object {
         init {
             // Shell.enableVerboseLogging = BuildConfig.DEBUG
-            Shell.setDefaultBuilder(
-                Shell.Builder.create()
-                    .setFlags(Shell.FLAG_REDIRECT_STDERR)
-                    .setTimeout(10),
-            )
+            try {
+                Shell.setDefaultBuilder(
+                    Shell.Builder.create()
+                        .setFlags(Shell.FLAG_REDIRECT_STDERR)
+                        .setTimeout(10),
+                )
+            } catch (_: Exception) {
+                // Shell builder was already configured
+            }
         }
     }
 

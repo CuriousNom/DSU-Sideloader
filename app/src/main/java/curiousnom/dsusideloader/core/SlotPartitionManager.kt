@@ -253,7 +253,7 @@ object SlotPartitionManager {
 
     fun ensureBootctlExtracted(context: Context) {
         try {
-            val dest = File(context.cacheDir, "bootctl")
+            val dest = File(context.filesDir, "bootctl")
             if (!dest.exists() || dest.length() == 0L) {
                 context.assets.open("bootctl").use { input ->
                     FileOutputStream(dest).use { output ->
@@ -261,11 +261,8 @@ object SlotPartitionManager {
                     }
                 }
             }
-            Shell.cmd(
-                "cp '${dest.absolutePath}' /data/local/tmp/bootctl",
-                "chmod 755 /data/local/tmp/bootctl",
-            ).exec()
-            Log.d(TAG, "Extracted bootctl to /data/local/tmp/bootctl")
+            dest.setExecutable(true, false)
+            Log.d(TAG, "Extracted bootctl to ${dest.absolutePath}")
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract bundled bootctl: ${e.message}")
         }
@@ -289,6 +286,8 @@ object SlotPartitionManager {
         val candidates = listOf(
             "/data/local/tmp/bootctl",
             "/data/local/tmp/bootctl.bin",
+            "/data/data/curiousnom.dsusideloader/files/bootctl",
+            "/data/user/0/curiousnom.dsusideloader/files/bootctl",
             "/data/adb/bootctl",
             "/data/adb/ksu/bin/bootctl",
             "/data/adb/ap/bin/bootctl",
