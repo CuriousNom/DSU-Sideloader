@@ -7,4 +7,6 @@
     <color name="system_accent_2">#0288d1</color>
     <color name="netrual_color">#111111</color>
     <color name="error">#FFC1666B</color>
+    <color name="ic_launcher_background">#00325B</color>
+    <color name="ic_launcher_foreground">#A8C8FF</color>
 </resources>
