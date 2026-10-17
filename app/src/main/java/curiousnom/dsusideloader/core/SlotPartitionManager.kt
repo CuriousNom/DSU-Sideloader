@@ -1,0 +1,169 @@
+package curiousnom.dsusideloader.core
+
+import android.util.Log
+import com.topjohnwu.superuser.Shell
+import curiousnom.dsusideloader.util.DevicePropUtils
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+
+/**
+ * Manages physical A/B slot partitions (boot, vendor_boot, dtbo, vbmeta)
+ * to enable true dual-booting with different kernels and vendor modules
+ * while DSU handles the logical partitions and isolated userdata.
+ */
+object SlotPartitionManager {
+
+    private const val TAG = "SlotPartitionManager"
+
+    var hasFlashedPhysicalSlot: Boolean = false
+
+    // Set of physical boot partitions that should be flashed to the secondary physical slot
+    val PHYSICAL_PARTITIONS = setOf(
+        "boot",
+        "vendor_boot",
+        "init_boot",
+        "dtbo",
+        "vbmeta",
+        "vbmeta_system",
+        "vbmeta_vendor",
+        "recovery",
+    )
+
+    fun isPhysicalPartition(partitionName: String): Boolean {
+        return PHYSICAL_PARTITIONS.contains(partitionName.lowercase())
+    }
+
+    fun isAbDevice(): Boolean {
+        val slot = DevicePropUtils.getActiveSlot()
+        return slot.startsWith("Slot ")
+    }
+
+    fun getCurrentSlotSuffix(): String {
+        val slot = DevicePropUtils.getActiveSlot()
+        return if (slot == "Slot B") "_b" else "_a"
+    }
+
+    fun getTargetSlotSuffix(): String {
+        return if (getCurrentSlotSuffix() == "_a") "_b" else "_a"
+    }
+
+    fun getTargetSlotIndex(): Int {
+        return if (getCurrentSlotSuffix() == "_a") 1 else 0
+    }
+
+    fun getPrimarySlotIndex(): Int {
+        return if (getCurrentSlotSuffix() == "_a") 0 else 1
+    }
+
+    /**
+     * Finds the real block device path for a partition on the given slot suffix.
+     * Searches standard by-name directories.
+     */
+    fun findBlockDevice(partitionName: String, slotSuffix: String = getTargetSlotSuffix()): String? {
+        val targetName = "${partitionName}$slotSuffix"
+        val paths = listOf(
+            "/dev/block/by-name/$targetName",
+            "/dev/block/bootdevice/by-name/$targetName",
+            "/dev/block/mapper/$targetName",
+        )
+
+        for (path in paths) {
+            val result = Shell.cmd("test -e $path && echo exists").exec()
+            if (result.out.contains("exists")) {
+                Log.d(TAG, "Found block device for $targetName at $path")
+                return path
+            }
+        }
+
+        // Fallback: search /dev/block
+        val search = Shell.cmd("find /dev/block/ -name $targetName 2>/dev/null | head -n 1").exec()
+        val found = search.out.firstOrNull()?.trim()
+        if (!found.isNullOrEmpty()) {
+            Log.d(TAG, "Found block device via search: $found")
+            return found
+        }
+
+        Log.w(TAG, "Could not find block device for $targetName")
+        return null
+    }
+
+    /**
+     * Patches AVB vbmeta header to disable verification and hashtree.
+     * In AVB 2.0 (libavb), offset 120 (0x78) holds a 32-bit big-endian flags field.
+     * Bit 0 (0x1) = HASHTREE_DISABLED
+     * Bit 1 (0x2) = VERIFICATION_DISABLED
+     */
+    fun patchVbmetaDisableVerification(bytes: ByteArray): ByteArray {
+        if (bytes.size >= 124) {
+            // Check magic "AVB0"
+            if (bytes[0] == 'A'.code.toByte() &&
+                bytes[1] == 'V'.code.toByte() &&
+                bytes[2] == 'B'.code.toByte() &&
+                bytes[3] == '0'.code.toByte()
+            ) {
+                // Set flags to 0x00000003 (disable verification and hashtree)
+                bytes[120] = 0
+                bytes[121] = 0
+                bytes[122] = 0
+                bytes[123] = 3
+                Log.d(TAG, "Patched AVB header: verification and verity disabled")
+            }
+        }
+        return bytes
+    }
+
+    /**
+     * Flashes an input stream of a physical partition to the target inactive slot.
+     */
+    fun flashPhysicalPartition(
+        partitionName: String,
+        inputStream: InputStream,
+        targetSlotSuffix: String = getTargetSlotSuffix(),
+    ): Boolean {
+        val blockDev = findBlockDevice(partitionName, targetSlotSuffix)
+        if (blockDev == null) {
+            Log.e(TAG, "Could not find block device for $partitionName$targetSlotSuffix")
+            return false
+        }
+
+        val tempFile = File("/data/local/tmp/dsu_flash_$partitionName.img")
+        try {
+            var bytes = inputStream.readBytes()
+            if (partitionName.lowercase().startsWith("vbmeta")) {
+                bytes = patchVbmetaDisableVerification(bytes)
+            }
+
+            FileOutputStream(tempFile).use { it.write(bytes) }
+
+            // Write to block device using root dd
+            val cmd = "dd if=${tempFile.absolutePath} of=$blockDev bs=4M"
+            val result = Shell.cmd(cmd).exec()
+            val success = result.isSuccess
+            Log.d(TAG, "Flashed $partitionName to $blockDev: success=$success")
+            return success
+        } catch (e: Exception) {
+            Log.e(TAG, "Error flashing $partitionName to $blockDev: ${e.message}", e)
+            return false
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+        }
+    }
+
+    /**
+     * Switches the active boot slot using bootctl.
+     */
+    fun setActiveBootSlot(slotIndex: Int): Boolean {
+        val result = Shell.cmd("bootctl set-active-boot-slot $slotIndex").exec()
+        val success = result.isSuccess
+        Log.d(TAG, "bootctl set-active-boot-slot $slotIndex: success=$success")
+        return success
+    }
+
+    fun markBootSuccessful(): Boolean {
+        val result = Shell.cmd("bootctl mark-boot-successful").exec()
+        return result.isSuccess
+    }
+}

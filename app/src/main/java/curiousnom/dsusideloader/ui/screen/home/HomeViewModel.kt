@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.topjohnwu.superuser.Shell
 import curiousnom.dsusideloader.BuildConfig
 import curiousnom.dsusideloader.core.BaseViewModel
+import curiousnom.dsusideloader.core.SlotPartitionManager
 import curiousnom.dsusideloader.core.StorageManager
 import curiousnom.dsusideloader.installer.adb.AdbInstallationHandler
 import curiousnom.dsusideloader.installer.privileged.DsuInstallationHandler
@@ -382,12 +383,17 @@ class HomeViewModel @Inject constructor(
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
             val isSticky = readBoolPref(AppPrefs.STICKY_DSU, default = true)
+            val hasPhysicalSlot = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false) || SlotPartitionManager.hasFlashedPhysicalSlot
             try {
                 PrivilegedProvider.run {
                     setEnable(true, !isSticky)
                 }
             } catch (e: Exception) {
                 Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
+            }
+            if (hasPhysicalSlot && SlotPartitionManager.isAbDevice()) {
+                val targetSlot = SlotPartitionManager.getTargetSlotIndex()
+                SlotPartitionManager.setActiveBootSlot(targetSlot)
             }
             val flag = if (isSticky) "-s" else "-o"
             Shell.cmd("gsi_tool enable $flag", "svc power reboot || reboot").exec()
@@ -403,6 +409,10 @@ class HomeViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
+            }
+            if (SlotPartitionManager.isAbDevice()) {
+                val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
+                SlotPartitionManager.setActiveBootSlot(primarySlot)
             }
             Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
         }
@@ -429,6 +439,8 @@ class HomeViewModel @Inject constructor(
                 Log.e(tag, "Error removing DSU: ${e.message}")
             }
             Shell.cmd("gsi_tool wipe").exec()
+            SlotPartitionManager.hasFlashedPhysicalSlot = false
+            updateBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, false)
             _uiState.update { it.copy(isDsuInstalled = false, isDsuRunning = false) }
             dismissSheet()
             resetInstallationCard()

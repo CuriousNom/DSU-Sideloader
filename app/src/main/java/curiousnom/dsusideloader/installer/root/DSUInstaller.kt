@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.os.SharedMemory
 import android.util.Log
+import curiousnom.dsusideloader.core.SlotPartitionManager
 import curiousnom.dsusideloader.model.DSUInstallationSource
 import curiousnom.dsusideloader.model.ImagePartition
 import curiousnom.dsusideloader.model.Type
@@ -260,7 +261,25 @@ class DSUInstaller(
             while (zis.nextEntry.also { entry = it } != null) {
                 val currentEntry = entry ?: break
                 val fileName = currentEntry.name
-                if (shouldInstallEntry(fileName)) {
+                if (!fileName.endsWith(".img")) {
+                    continue
+                }
+                val partitionName = fileName.substringBeforeLast(".").substringAfterLast("/").lowercase()
+
+                if (SlotPartitionManager.isPhysicalPartition(partitionName)) {
+                    val targetSlotName = "Slot ${SlotPartitionManager.getTargetSlotSuffix().trimStart('_').uppercase()}"
+                    Log.d(tag, "Physical boot partition detected: $partitionName. Flashing to $targetSlotName...")
+                    onInstallationStepUpdate(InstallationStep.INSTALLING_ROOTED)
+                    onInstallationProgressUpdate(0.5f, "$partitionName ($targetSlotName)")
+                    val flashed = SlotPartitionManager.flashPhysicalPartition(partitionName, zis)
+                    if (flashed) {
+                        SlotPartitionManager.hasFlashedPhysicalSlot = true
+                        onInstallationProgressUpdate(1f, "$partitionName ($targetSlotName)")
+                        Log.d(tag, "Physical partition $partitionName successfully flashed to $targetSlotName.")
+                    } else {
+                        Log.w(tag, "Failed or skipped physical partition $partitionName.")
+                    }
+                } else if (shouldInstallEntry(fileName)) {
                     val ok = installImageFromAnEntry(currentEntry, zis)
                     if (!ok || installationJob.isCancelled) {
                         safeRollback()
