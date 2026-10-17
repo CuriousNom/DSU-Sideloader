@@ -115,11 +115,13 @@ object SlotPartitionManager {
 
     /**
      * Flashes an input stream of a physical partition to the target inactive slot.
+     * Uses 64KB chunk streaming to disk to avoid OutOfMemoryError on large partitions.
      */
     fun flashPhysicalPartition(
         partitionName: String,
         inputStream: InputStream,
         targetSlotSuffix: String = getTargetSlotSuffix(),
+        cacheDir: File? = null,
     ): Boolean {
         val blockDev = findBlockDevice(partitionName, targetSlotSuffix)
         if (blockDev == null) {
@@ -127,20 +129,31 @@ object SlotPartitionManager {
             return false
         }
 
-        val tempFile = File("/data/local/tmp/dsu_flash_$partitionName.img")
+        val tempDir = cacheDir ?: File("/data/local/tmp")
+        if (!tempDir.exists()) {
+            tempDir.mkdirs()
+        }
+        val tempFile = File(tempDir, "dsu_flash_$partitionName.img")
         try {
-            var bytes = inputStream.readBytes()
-            if (partitionName.lowercase().startsWith("vbmeta")) {
-                bytes = patchVbmetaDisableVerification(bytes)
+            // Stream in 64KB chunks to avoid OutOfMemoryError on large boot/vendor_boot images
+            FileOutputStream(tempFile).use { out ->
+                val buffer = ByteArray(65536)
+                var bytesRead: Int
+                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                    out.write(buffer, 0, bytesRead)
+                }
             }
 
-            FileOutputStream(tempFile).use { it.write(bytes) }
+            // Patch vbmeta verification directly on disk if this is a vbmeta partition
+            if (partitionName.lowercase().startsWith("vbmeta") && tempFile.length() >= 124) {
+                patchVbmetaFile(tempFile)
+            }
 
             // Write to block device using root dd
-            val cmd = "dd if=${tempFile.absolutePath} of=$blockDev bs=4M"
+            val cmd = "dd if='${tempFile.absolutePath}' of='$blockDev' bs=4M"
             val result = Shell.cmd(cmd).exec()
             val success = result.isSuccess
-            Log.d(TAG, "Flashed $partitionName to $blockDev: success=$success")
+            Log.d(TAG, "Flashed $partitionName to $blockDev: success=$success (exitCode=${result.code})")
             return success
         } catch (e: Exception) {
             Log.e(TAG, "Error flashing $partitionName to $blockDev: ${e.message}", e)
@@ -149,6 +162,26 @@ object SlotPartitionManager {
             if (tempFile.exists()) {
                 tempFile.delete()
             }
+        }
+    }
+
+    private fun patchVbmetaFile(file: File) {
+        try {
+            java.io.RandomAccessFile(file, "rw").use { raf ->
+                val magic = ByteArray(4)
+                raf.readFully(magic)
+                if (magic[0] == 'A'.code.toByte() &&
+                    magic[1] == 'V'.code.toByte() &&
+                    magic[2] == 'B'.code.toByte() &&
+                    magic[3] == '0'.code.toByte()
+                ) {
+                    raf.seek(120)
+                    raf.writeInt(3) // 0x00000003: disable verification and hashtree
+                    Log.d(TAG, "Patched AVB header in ${file.name}: verity and verification disabled")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to patch AVB flags on ${file.name}: ${e.message}")
         }
     }
 

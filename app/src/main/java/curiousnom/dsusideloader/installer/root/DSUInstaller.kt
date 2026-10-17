@@ -270,8 +270,11 @@ class DSUInstaller(
                     val targetSlotName = "Slot ${SlotPartitionManager.getTargetSlotSuffix().trimStart('_').uppercase()}"
                     Log.d(tag, "Physical boot partition detected: $partitionName. Flashing to $targetSlotName...")
                     onInstallationStepUpdate(InstallationStep.INSTALLING_ROOTED)
-                    onInstallationProgressUpdate(0.5f, "$partitionName ($targetSlotName)")
-                    val flashed = SlotPartitionManager.flashPhysicalPartition(partitionName, zis)
+                    val flashed = SlotPartitionManager.flashPhysicalPartition(
+                        partitionName = partitionName,
+                        inputStream = zis,
+                        cacheDir = application.cacheDir,
+                    )
                     if (flashed) {
                         SlotPartitionManager.hasFlashedPhysicalSlot = true
                         onInstallationProgressUpdate(1f, "$partitionName ($targetSlotName)")
