@@ -86,9 +86,14 @@ fun Settings(
             )
             PreferenceItem(
                 title = stringResource(id = R.string.sticky_dsu_title),
-                description = stringResource(id = R.string.sticky_dsu_description),
+                description = if (uiState.isStickyEnforced) {
+                    stringResource(id = R.string.sticky_mode_enforced_desc)
+                } else {
+                    stringResource(id = R.string.sticky_dsu_description)
+                },
                 showToggle = true,
-                isChecked = uiState.preferences[AppPrefs.STICKY_DSU] ?: false,
+                isEnabled = !uiState.isStickyEnforced,
+                isChecked = if (uiState.isStickyEnforced) true else (uiState.preferences[AppPrefs.STICKY_DSU] ?: true),
                 onClick = { settingsViewModel.togglePreference(AppPrefs.STICKY_DSU, !it) },
             )
         }

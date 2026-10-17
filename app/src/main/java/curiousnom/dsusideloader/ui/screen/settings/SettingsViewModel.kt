@@ -7,6 +7,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.viewModelScope
 import curiousnom.dsusideloader.core.BaseViewModel
+import curiousnom.dsusideloader.core.SlotPartitionManager
 import curiousnom.dsusideloader.model.Session
 import curiousnom.dsusideloader.preferences.AppPrefs
 import curiousnom.dsusideloader.util.OperationMode
@@ -32,15 +33,26 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     fun reloadPreferences() {
-        uiState.value.preferences.forEach { entry ->
-            viewModelScope.launch {
-                val isEnabled = readBoolPref(entry.key, entry.value)
-                togglePreference(entry.key, isEnabled)
-            }
-        }
+        viewModelScope.launch {
+            val hasPrefFlashed = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false)
+            val hasPhysicalSlot = hasPrefFlashed || SlotPartitionManager.hasSecondaryPhysicalSlot()
+            val isDualBoot = hasPhysicalSlot || SlotPartitionManager.isAbDevice()
 
-        if (session.isRoot()) {
-            _uiState.update { it.copy(isRoot = true) }
+            val cloneMap = hashMapOf<String, Boolean>()
+            cloneMap.putAll(uiState.value.preferences)
+            uiState.value.preferences.keys.forEach { key ->
+                val defaultVal = uiState.value.preferences[key] ?: false
+                cloneMap[key] = readBoolPref(key, default = defaultVal)
+            }
+
+            _uiState.update {
+                it.copy(
+                    preferences = cloneMap,
+                    isRoot = session.isRoot(),
+                    isStickyEnforced = hasPhysicalSlot,
+                    isDualBooting = isDualBoot,
+                )
+            }
         }
     }
 
@@ -49,6 +61,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun togglePreference(preference: String, value: Boolean) {
+        if (preference == AppPrefs.STICKY_DSU && uiState.value.isStickyEnforced) {
+            return
+        }
         viewModelScope.launch {
             updateBoolPref(preference, value) {
                 _uiState.update {
@@ -80,9 +95,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val isDevOptEnabled = readBoolPref(AppPrefs.DEVELOPER_OPTIONS)
             _uiState.update { it.copy(isDevOptEnabled = isDevOptEnabled) }
-            if (isDevOptEnabled) {
-                reloadPreferences()
-            }
+            reloadPreferences()
         }
     }
 }
