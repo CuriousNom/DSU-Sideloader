@@ -12,6 +12,7 @@ data class InstallationCardState(
     val isProgressBarIndeterminate: Boolean = false,
     val installationProgress: Float = 0F,
     val currentPartitionText: String = "",
+    val imageFormatInfo: String = "",
 )
 
 data class UserDataCardState(

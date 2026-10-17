@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,6 +36,20 @@ fun NotInstallingCardContent(
         textFieldValue = uiState.text,
         textFieldTitle = stringResource(id = R.string.select_gsi_info),
     )
+    if (uiState.imageFormatInfo.isNotEmpty()) {
+        Spacer(modifier = Modifier.padding(top = 8.dp))
+        Surface(
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text(
+                text = uiState.imageFormatInfo,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+    }
     Spacer(modifier = Modifier.padding(top = 10.dp))
     Row(
         verticalAlignment = Alignment.CenterVertically,

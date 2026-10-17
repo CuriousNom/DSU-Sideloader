@@ -22,6 +22,7 @@ fun ConfirmInstallationSheet(
     filename: String,
     userdata: String,
     fileSize: Long,
+    imageFormat: String = "",
     onClickConfirm: () -> Unit,
     onClickCancel: () -> Unit,
 ) {
@@ -37,6 +38,14 @@ fun ConfirmInstallationSheet(
                 text = filename,
                 textColor = MaterialTheme.colorScheme.onBackground,
             )
+            if (imageFormat.isNotEmpty()) {
+                DialogItem(
+                    icon = Icons.Outlined.Article,
+                    title = "${stringResource(id = R.string.image_format)}:",
+                    text = imageFormat,
+                    textColor = MaterialTheme.colorScheme.onBackground,
+                )
+            }
             DialogItem(
                 icon = Icons.Outlined.Storage,
                 title = "${stringResource(id = R.string.userdata_size)}:",

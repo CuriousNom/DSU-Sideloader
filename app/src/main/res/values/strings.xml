@@ -41,6 +41,7 @@
     <string name="dsu_already_installed">A DSU installation is already present.</string>
 
     <string name="selected_file">Selected file</string>
+    <string name="image_format">Image format</string>
     <string name="file_unsupported">Unsupported file</string>
 
     <string name="clear">Clear</string>

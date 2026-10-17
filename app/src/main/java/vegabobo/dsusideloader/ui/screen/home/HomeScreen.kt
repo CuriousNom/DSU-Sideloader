@@ -155,6 +155,7 @@ fun Home(
                 filename = homeViewModel.obtainSelectedFilename(),
                 userdata = homeViewModel.session.userSelection.getUserDataSizeAsGB(),
                 fileSize = homeViewModel.session.userSelection.userSelectedImageSize,
+                imageFormat = uiState.installationCard.imageFormatInfo,
                 onClickConfirm = { homeViewModel.onConfirmInstallationSheet() },
                 onClickCancel = { homeViewModel.dismissSheet() },
             )

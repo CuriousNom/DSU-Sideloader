@@ -34,6 +34,7 @@ import vegabobo.dsusideloader.preparation.Preparation
 import vegabobo.dsusideloader.service.PrivilegedProvider
 import vegabobo.dsusideloader.util.DevicePropUtils
 import vegabobo.dsusideloader.util.FilenameUtils
+import vegabobo.dsusideloader.util.ImageInspector
 import vegabobo.dsusideloader.util.OperationMode
 import vegabobo.dsusideloader.util.OperationModeUtils
 import vegabobo.dsusideloader.util.StorageUtils
@@ -494,12 +495,22 @@ class HomeViewModel @Inject constructor(
 
         session.userSelection.selectedFileName = filename
         session.userSelection.selectedFileUri = uri
-        updateInstallationCard {
-            it.copy(
-                text = filename,
-                isTextFieldEnabled = false,
-                isInstallable = true,
-            )
+        viewModelScope.launch(Dispatchers.IO) {
+            val formatInfo = try {
+                application.contentResolver.openInputStream(uri)?.use { stream ->
+                    ImageInspector.inspect(stream).displayName
+                } ?: ""
+            } catch (e: Exception) {
+                ""
+            }
+            updateInstallationCard {
+                it.copy(
+                    text = filename,
+                    isTextFieldEnabled = false,
+                    isInstallable = true,
+                    imageFormatInfo = formatInfo,
+                )
+            }
         }
     }
 
