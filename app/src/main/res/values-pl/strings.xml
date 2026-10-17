@@ -109,6 +109,8 @@
     <string name="unmount_sd_description">Tymczasowo odłącz kartę sd podczas instalacji</string>
     <string name="keep_screen_on">Pozostaw włączony ekran</string>
     <string name="other">Inne</string>
+    <string name="haptic_feedback_title">Wibracje haptyczne</string>
+    <string name="haptic_feedback_description">Wibracje przy dotknięciu przycisków i interakcjach</string>
     <string name="operation_mode">Tryb pracy</string>
     <string name="about">O programie</string>
     <string name="about_description">Credits, biblioteki i więcej…</string>

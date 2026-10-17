@@ -120,6 +120,8 @@
     <string name="keep_screen_on">保持亮屏</string>
     <string name="developer_options">开发者选项</string>
     <string name="other">其他</string>
+    <string name="haptic_feedback_title">触觉反馈</string>
+    <string name="haptic_feedback_description">在点击按键与交互时提供振动反馈</string>
     <string name="operation_mode">实现方式</string>
     <string name="about">关于</string>
     <string name="about_description">贡献者、使用的库，以及更多…</string>

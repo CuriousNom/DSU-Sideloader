@@ -177,6 +177,9 @@
 
     <string name="other">Other</string>
 
+    <string name="haptic_feedback_title">Haptic feedback</string>
+    <string name="haptic_feedback_description">Provide tactile vibration feedback on interactions</string>
+
     <string name="operation_mode">Operation mode</string>
 
     <string name="about">About</string>

@@ -109,6 +109,8 @@
     <string name="unmount_sd_description">Tạm thời ngắt kết nối sd khi cài đặt</string>
     <string name="keep_screen_on">Luôn bật màn hình</string>
     <string name="other">Khác</string>
+    <string name="haptic_feedback_title">Phản hồi xúc giác</string>
+    <string name="haptic_feedback_description">Rung khi nhấn nút và tương tác</string>
     <string name="operation_mode">Chế độ hoạt động</string>
     <string name="about">Về</string>
     <string name="about_description">Tín dụng, thư viện và hơn thế nữa…</string>

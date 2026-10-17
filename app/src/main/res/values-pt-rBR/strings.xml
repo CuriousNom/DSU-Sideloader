@@ -120,6 +120,8 @@
     <string name="keep_screen_on">Manter tela ligada</string>
     <string name="developer_options">Opções de desenvolvedor</string>
     <string name="other">Outros</string>
+    <string name="haptic_feedback_title">Feedback tátil</string>
+    <string name="haptic_feedback_description">Vibrar ao tocar em botões e interações</string>
     <string name="operation_mode">Modo de operação</string>
     <string name="about">Sobre</string>
     <string name="about_description">Créditos, bibliotecas e mais…</string>

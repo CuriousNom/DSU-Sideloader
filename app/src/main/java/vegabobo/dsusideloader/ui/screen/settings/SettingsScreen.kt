@@ -124,6 +124,14 @@ fun Settings(
         Title(title = stringResource(id = R.string.other))
         SimpleCard(addPadding = false) {
             PreferenceItem(
+                title = stringResource(id = R.string.haptic_feedback_title),
+                description = stringResource(id = R.string.haptic_feedback_description),
+                showToggle = true,
+                isChecked = uiState.preferences[AppPrefs.HAPTIC_FEEDBACK] ?: true,
+                showDivider = true,
+                onClick = { settingsViewModel.togglePreference(AppPrefs.HAPTIC_FEEDBACK, !it) },
+            )
+            PreferenceItem(
                 title = stringResource(id = R.string.operation_mode),
                 description = settingsViewModel.checkOperationMode(),
                 showDivider = true,

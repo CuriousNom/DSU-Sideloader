@@ -17,8 +17,9 @@ open class BaseViewModel(
 
     suspend fun readBoolPref(
         key: String,
+        default: Boolean = false,
     ): Boolean {
-        return DataStoreUtils.readBoolPref(dataStore, key, false)
+        return DataStoreUtils.readBoolPref(dataStore, key, default)
     }
 
     suspend fun updateBoolPref(
