@@ -125,19 +125,22 @@ fun Home(
                 }
             }
             if (uiState.passedInitialChecks && uiState.additionalCard == AdditionalCardState.NONE) {
-                DualBootCard(
-                    isDsuRunning = uiState.isDsuRunning,
-                    isDsuInstalled = uiState.isDsuInstalled,
-                    isStickyDsu = uiState.isStickyDsu,
-                    isStickyEnforced = uiState.isStickyEnforced,
-                    isRoot = uiState.isRoot,
-                    onToggleStickyDsu = { homeViewModel.toggleStickyDsu(it) },
-                    onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
-                    onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
-                    onClickDiscardDsu = { homeViewModel.showDiscardSheet() },
-                )
+                if (uiState.isDualBooting) {
+                    DualBootCard(
+                        isDsuRunning = uiState.isDsuRunning,
+                        isDsuInstalled = uiState.isDsuInstalled,
+                        isStickyDsu = uiState.isStickyDsu,
+                        isStickyEnforced = uiState.isStickyEnforced,
+                        isRoot = uiState.isRoot,
+                        onToggleStickyDsu = { homeViewModel.toggleStickyDsu(it) },
+                        onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
+                        onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
+                        onClickDiscardDsu = { homeViewModel.showDiscardSheet() },
+                    )
+                }
                 InstallationCard(
                     uiState = uiState.installationCard,
+                    isDualBooting = uiState.isDualBooting,
                     onClickInstall = { homeViewModel.onClickInstall() },
                     onClickUnmountSdCardAndRetry = { homeViewModel.onClickUnmountSdCardAndRetry() },
                     onClickSetSeLinuxPermissive = { homeViewModel.onClickSetSeLinuxPermissive() },

@@ -33,6 +33,7 @@ fun InstallationCard(
     onSelectFileSuccess: (Uri) -> Unit,
     onClickViewLogs: () -> Unit,
     onClickViewCommands: () -> Unit,
+    isDualBooting: Boolean = true,
 ) {
     var chooseFile = Intent(Intent.ACTION_OPEN_DOCUMENT)
     chooseFile.type = "*/*"
@@ -78,6 +79,7 @@ fun InstallationCard(
             onClickViewLogs = onClickViewLogs,
             onClickViewCommands = onClickViewCommands,
             minPercentageOfFreeStorage = minPercentageOfFreeStorage,
+            isDualBooting = isDualBooting,
         )
     }
 }

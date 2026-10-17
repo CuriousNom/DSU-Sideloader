@@ -146,8 +146,14 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        if (SlotPartitionManager.hasSecondaryPhysicalSlot()) {
-            _uiState.update { it.copy(isStickyDsu = true, isStickyEnforced = true) }
+        val hasPhysicalSlot = SlotPartitionManager.hasSecondaryPhysicalSlot()
+        val isDualBoot = hasPhysicalSlot || SlotPartitionManager.isAbDevice()
+        _uiState.update {
+            it.copy(
+                isStickyDsu = if (hasPhysicalSlot) true else it.isStickyDsu,
+                isStickyEnforced = hasPhysicalSlot,
+                isDualBooting = isDualBoot,
+            )
         }
     }
 
@@ -230,11 +236,13 @@ class HomeViewModel @Inject constructor(
             val hasPhysicalSlot = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false) ||
                 SlotPartitionManager.hasSecondaryPhysicalSlot()
             val isSticky = if (hasPhysicalSlot) true else readBoolPref(AppPrefs.STICKY_DSU, default = true)
+            val isDualBoot = hasPhysicalSlot || SlotPartitionManager.isAbDevice()
             _uiState.update {
                 it.copy(
                     shouldKeepScreenOn = shouldKeepScreenOn,
                     isStickyDsu = isSticky,
                     isStickyEnforced = hasPhysicalSlot,
+                    isDualBooting = isDualBoot,
                 )
             }
 

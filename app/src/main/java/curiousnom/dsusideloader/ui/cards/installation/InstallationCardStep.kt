@@ -26,6 +26,7 @@ fun InstallationCardStep(
     @Suppress("UNUSED_PARAMETER") onClickRebootToHostOS: () -> Unit = {},
     onClickViewLogs: () -> Unit,
     onClickViewCommands: () -> Unit,
+    isDualBooting: Boolean = true,
 ) {
     when (uiState.installationStep) {
         InstallationStep.NOT_INSTALLING ->
@@ -38,10 +39,10 @@ fun InstallationCardStep(
         InstallationStep.DSU_ALREADY_INSTALLED ->
             ProgressableCardContent(
                 text = stringResource(R.string.dsu_already_installed),
-                textFirstButton = stringResource(id = R.string.reboot_into_dsu),
-                onClickFirstButton = onClickRebootToDynOS,
-                textSecondButton = stringResource(id = R.string.discard),
-                onClickSecondButton = onClickDiscardDsu,
+                textFirstButton = if (isDualBooting) "" else stringResource(id = R.string.reboot_into_dsu),
+                onClickFirstButton = if (isDualBooting) null else onClickRebootToDynOS,
+                textSecondButton = if (isDualBooting) "" else stringResource(id = R.string.discard),
+                onClickSecondButton = if (isDualBooting) null else onClickDiscardDsu,
             )
         InstallationStep.DSU_ALREADY_RUNNING_DYN_OS ->
             ProgressableCardContent(

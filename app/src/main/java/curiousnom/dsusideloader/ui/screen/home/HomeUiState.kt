@@ -63,6 +63,7 @@ data class HomeUiState(
     val isStickyDsu: Boolean = true,
     val isStickyEnforced: Boolean = false,
     val isRoot: Boolean = false,
+    val isDualBooting: Boolean = true,
 ) {
     fun isInstalling(): Boolean {
         return installationCard.installationStep != InstallationStep.NOT_INSTALLING
