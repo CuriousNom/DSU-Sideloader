@@ -2,7 +2,7 @@ package curiousnom.dsusideloader.ui.screen.settings
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.NewReleases
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
@@ -148,7 +148,7 @@ fun Settings(
         DialogSheetState.BUILT_IN_INSTALLER ->
             DialogLikeBottomSheet(
                 title = stringResource(id = R.string.experimental_feature),
-                icon = Icons.Outlined.NewReleases,
+                icon = Icons.Outlined.Bolt,
                 text = stringResource(id = R.string.experimental_feature_description),
                 confirmText = stringResource(id = R.string.yes),
                 cancelText = stringResource(id = R.string.cancel),

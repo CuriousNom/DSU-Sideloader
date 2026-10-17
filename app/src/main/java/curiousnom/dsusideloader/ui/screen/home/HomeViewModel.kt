@@ -341,6 +341,14 @@ class HomeViewModel @Inject constructor(
             PrivilegedProvider.run { forceStopPackage("com.android.dynsystem") }
         }
 
+        if (session.preferences.useBuiltinInstaller && session.isRoot()) {
+            PrivilegedProvider.run {
+                abort()
+                remove()
+                forceStopPackage("com.android.dynsystem")
+            }
+        }
+
         if (installationJob.isActive) {
             installationJob.cancel()
         }
