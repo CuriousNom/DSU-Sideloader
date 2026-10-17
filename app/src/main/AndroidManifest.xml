@@ -54,12 +54,12 @@
         </provider>
 
         <service
-            android:name="vegabobo.dsusideloader.service.PrivilegedSystemService"
+            android:name=".service.PrivilegedSystemService"
             android:enabled="true"
             android:exported="false" />
 
         <service
-            android:name="vegabobo.dsusideloader.service.DsuTileService"
+            android:name=".service.DsuTileService"
             android:exported="true"
             android:icon="@drawable/ic_qs_dsu"
             android:label="@string/dsu_tile_label"

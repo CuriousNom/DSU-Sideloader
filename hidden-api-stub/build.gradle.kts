@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "vegabobo.dsusideloader"
+    namespace = "curiousnom.dsusideloader"
     compileSdk = 33
 
     defaultConfig {
