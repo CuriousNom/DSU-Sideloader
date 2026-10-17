@@ -1,6 +1,5 @@
 package curiousnom.dsusideloader.util
 
-import com.topjohnwu.superuser.Shell
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 class DevicePropUtils {
@@ -43,17 +42,9 @@ class DevicePropUtils {
         }
 
         fun isDsuRunning(): Boolean {
-            if (getActiveSlot() == "Slot B" || getSystemProperty("ro.boot.slot_suffix") == "_b") {
-                return true
-            }
-            val prop = getSystemProperty("ro.gsid.image_installed")
-            if (prop == "1") return true
-            return try {
-                val r = Shell.cmd("getprop ro.gsid.image_installed").exec().out.firstOrNull()?.trim()
-                r == "1"
-            } catch (e: Exception) {
-                false
-            }
+            return getActiveSlot() == "Slot B" ||
+                getSystemProperty("ro.boot.slot_suffix") == "_b" ||
+                getSystemProperty("ro.gsid.image_installed") == "1"
         }
 
         fun getActiveSlot(): String {

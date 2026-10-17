@@ -51,23 +51,12 @@ object SlotPartitionManager {
 
     /**
      * Determines whether we are currently running inside DSU (guest OS).
-     * Checks multiple indicators:
-     * 1. DevicePropUtils.isDsuRunning()
-     * 2. gsi_tool status containing "running"
-     * 3. Root property ro.gsid.image_installed == "1"
+     * Fast in-process check without shell execution or service blocking.
      */
     fun isRunningInDsu(): Boolean {
-        if (getCurrentSlotSuffix() == "_b" || DevicePropUtils.getActiveSlot() == "Slot B" || DevicePropUtils.isDsuRunning()) {
-            return true
-        }
-        return try {
-            val status = Shell.cmd("gsi_tool status 2>/dev/null").exec().out.joinToString(" ")
-            if (status.contains("running")) return true
-            val prop = Shell.cmd("getprop ro.gsid.image_installed").exec().out.firstOrNull()?.trim()
-            prop == "1"
-        } catch (_: Exception) {
-            false
-        }
+        return getCurrentSlotSuffix() == "_b" ||
+            DevicePropUtils.getActiveSlot() == "Slot B" ||
+            DevicePropUtils.isDsuRunning()
     }
 
     /**
@@ -106,18 +95,27 @@ object SlotPartitionManager {
         return getSecondarySlotIndex()
     }
 
+    private var cachedDualBootActive: Boolean? = null
+
     fun hasSecondaryPhysicalSlot(): Boolean {
         if (hasFlashedPhysicalSlot) return true
-        val check = Shell.cmd("test -f /data/local/tmp/.dsu_dualboot_active && echo yes").exec()
-        return check.out.contains("yes")
+        cachedDualBootActive?.let { return it }
+        val exists = try {
+            File("/data/local/tmp/.dsu_dualboot_active").exists()
+        } catch (_: Exception) {
+            false
+        }
+        cachedDualBootActive = exists
+        return exists
     }
 
     fun setSecondaryPhysicalSlot(active: Boolean) {
         hasFlashedPhysicalSlot = active
+        cachedDualBootActive = active
         if (active) {
-            Shell.cmd("touch /data/local/tmp/.dsu_dualboot_active").exec()
+            Shell.cmd("touch /data/local/tmp/.dsu_dualboot_active").submit()
         } else {
-            Shell.cmd("rm -f /data/local/tmp/.dsu_dualboot_active").exec()
+            Shell.cmd("rm -f /data/local/tmp/.dsu_dualboot_active").submit()
         }
     }
 

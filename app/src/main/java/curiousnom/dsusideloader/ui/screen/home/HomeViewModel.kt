@@ -104,15 +104,17 @@ class HomeViewModel @Inject constructor(
     //
 
     init {
-        val isRunningDsu = SlotPartitionManager.isRunningInDsu() || DevicePropUtils.isDsuRunning()
-        val isRooted = session.isRoot() || (Shell.isAppGrantedRoot() == true)
+        val isRunningDsu = SlotPartitionManager.isRunningInDsu()
+        val isRooted = session.isRoot()
         _uiState.update { it.copy(isDsuRunning = isRunningDsu, isRoot = isRooted) }
 
         viewModelScope.launch {
             session.operationMode.collect { opMode ->
-                val rooted = (opMode == OperationMode.SYSTEM_AND_ROOT || opMode == OperationMode.ROOT) ||
-                    (Shell.isAppGrantedRoot() == true)
+                val rooted = (opMode == OperationMode.SYSTEM_AND_ROOT || opMode == OperationMode.ROOT)
                 _uiState.update { it.copy(isRoot = rooted) }
+                if (rooted && !SlotPartitionManager.isRunningInDsu()) {
+                    checkInstalledDsu()
+                }
             }
         }
 
@@ -120,28 +122,16 @@ class HomeViewModel @Inject constructor(
             updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
             // Suppress dangerous system DSU notification in guest OS and show safe custom Dual Boot notification
             viewModelScope.launch(Dispatchers.IO) {
-                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").exec()
+                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").submit()
                 DualBootNotificationHelper.showGuestOsNotification(application)
             }
         } else {
             DualBootNotificationHelper.dismissNotification(application)
-            if (session.isRoot()) {
-                PrivilegedProvider.run {
-                    val inUse = isInUse
-                    val installed = isInstalled
-                    _uiState.update { it.copy(isDsuRunning = inUse, isDsuInstalled = installed) }
-                    if (inUse) {
-                        updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
-                        return@run
-                    }
-                    if (installed) {
-                        updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
-                        return@run
-                    }
-                }
+            checkInstalledDsu()
+            if (isRooted) {
                 // Ensure com.android.dynsystem is enabled on host OS
                 viewModelScope.launch(Dispatchers.IO) {
-                    Shell.cmd("pm enable com.android.dynsystem 2>/dev/null").exec()
+                    Shell.cmd("pm enable com.android.dynsystem 2>/dev/null").submit()
                 }
             }
         }
@@ -157,21 +147,39 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun checkInstalledDsu() {
+        if (session.isRoot()) {
+            PrivilegedProvider.run {
+                val inUse = isInUse
+                val installed = isInstalled
+                _uiState.update { it.copy(isDsuRunning = inUse, isDsuInstalled = installed) }
+                if (inUse) {
+                    updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
+                    return@run
+                }
+                if (installed) {
+                    updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
+                    return@run
+                }
+            }
+        }
+    }
+
     fun initialChecks() {
-        val isRunningDsu = SlotPartitionManager.isRunningInDsu() || DevicePropUtils.isDsuRunning()
+        val isRunningDsu = SlotPartitionManager.isRunningInDsu()
         if (isRunningDsu) {
             updateAdditionalCardState(AdditionalCardState.NONE)
             _uiState.update {
                 it.copy(
                     passedInitialChecks = true,
                     isDsuRunning = true,
-                    isRoot = session.isRoot() || (Shell.isAppGrantedRoot() == true),
+                    isRoot = session.isRoot(),
                     is16KbPageSize = DevicePropUtils.is16KbPageSize(),
                 )
             }
             updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
             viewModelScope.launch(Dispatchers.IO) {
-                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").exec()
+                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").submit()
                 DualBootNotificationHelper.showGuestOsNotification(application)
             }
             return
@@ -222,7 +230,7 @@ class HomeViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     passedInitialChecks = true,
-                    isRoot = session.isRoot() || (Shell.isAppGrantedRoot() == true),
+                    isRoot = session.isRoot(),
                     is16KbPageSize = DevicePropUtils.is16KbPageSize(),
                 )
             }

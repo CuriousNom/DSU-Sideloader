@@ -15,6 +15,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -40,11 +41,11 @@ fun DualBootCard(
     onClickRebootToHostOS: () -> Unit,
     onClickDiscardDsu: () -> Unit,
 ) {
-    val activeSlot = DevicePropUtils.getActiveSlot()
-    val kernel = DevicePropUtils.getKernelVersion()
-    val pageSize = DevicePropUtils.getKernelPageSizeFormatted()
-    val osDisplay = DevicePropUtils.getOsDisplay()
-    val deviceModel = DevicePropUtils.getDeviceModel()
+    val activeSlot = remember { DevicePropUtils.getActiveSlot() }
+    val kernel = remember { DevicePropUtils.getKernelVersion() }
+    val pageSize = remember { DevicePropUtils.getKernelPageSizeFormatted() }
+    val osDisplay = remember { DevicePropUtils.getOsDisplay() }
+    val deviceModel = remember { DevicePropUtils.getDeviceModel() }
 
     CardBox(
         modifier = modifier,
