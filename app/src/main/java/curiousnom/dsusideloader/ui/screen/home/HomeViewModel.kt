@@ -132,6 +132,10 @@ class HomeViewModel @Inject constructor(
                 Shell.cmd("pm enable com.android.dynsystem 2>/dev/null").exec()
             }
         }
+
+        if (SlotPartitionManager.hasSecondaryPhysicalSlot()) {
+            _uiState.update { it.copy(isStickyDsu = true, isStickyEnforced = true) }
+        }
     }
 
     fun initialChecks() {
@@ -185,11 +189,14 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val shouldKeepScreenOn = readBoolPref(AppPrefs.KEEP_SCREEN_ON)
             Log.d(tag, "shouldKeepScreenOn: $shouldKeepScreenOn")
-            val isSticky = readBoolPref(AppPrefs.STICKY_DSU, default = true)
+            val hasPhysicalSlot = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false) ||
+                SlotPartitionManager.hasSecondaryPhysicalSlot()
+            val isSticky = if (hasPhysicalSlot) true else readBoolPref(AppPrefs.STICKY_DSU, default = true)
             _uiState.update {
                 it.copy(
                     shouldKeepScreenOn = shouldKeepScreenOn,
                     isStickyDsu = isSticky,
+                    isStickyEnforced = hasPhysicalSlot,
                 )
             }
 
@@ -199,6 +206,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun toggleStickyDsu(enabled: Boolean) {
+        if (_uiState.value.isStickyEnforced) return
         viewModelScope.launch {
             updateBoolPref(AppPrefs.STICKY_DSU, enabled)
             _uiState.update { it.copy(isStickyDsu = enabled) }

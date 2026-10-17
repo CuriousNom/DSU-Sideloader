@@ -33,6 +33,7 @@ fun DualBootCard(
     isDsuRunning: Boolean,
     isDsuInstalled: Boolean,
     isStickyDsu: Boolean,
+    isStickyEnforced: Boolean = false,
     onToggleStickyDsu: (Boolean) -> Unit,
     onClickRebootToDynOS: () -> Unit,
     onClickRebootToHostOS: () -> Unit,
@@ -167,10 +168,10 @@ fun DualBootCard(
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = if (isStickyDsu) {
-                                    stringResource(R.string.sticky_mode_enabled_desc)
-                                } else {
-                                    stringResource(R.string.sticky_mode_disabled_desc)
+                                text = when {
+                                    isStickyEnforced -> stringResource(R.string.sticky_mode_enforced_desc)
+                                    isStickyDsu -> stringResource(R.string.sticky_mode_enabled_desc)
+                                    else -> stringResource(R.string.sticky_mode_disabled_desc)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -178,7 +179,8 @@ fun DualBootCard(
                         }
                         Switch(
                             checked = isStickyDsu,
-                            onCheckedChange = onToggleStickyDsu,
+                            onCheckedChange = if (isStickyEnforced) null else onToggleStickyDsu,
+                            enabled = !isStickyEnforced,
                         )
                     }
 

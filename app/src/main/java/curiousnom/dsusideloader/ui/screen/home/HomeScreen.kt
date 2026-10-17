@@ -128,6 +128,7 @@ fun Home(
                     isDsuRunning = uiState.isDsuRunning,
                     isDsuInstalled = uiState.isDsuInstalled,
                     isStickyDsu = uiState.isStickyDsu,
+                    isStickyEnforced = uiState.isStickyEnforced,
                     onToggleStickyDsu = { homeViewModel.toggleStickyDsu(it) },
                     onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
                     onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
