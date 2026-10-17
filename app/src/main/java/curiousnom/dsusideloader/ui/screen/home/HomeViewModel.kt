@@ -102,11 +102,15 @@ class HomeViewModel @Inject constructor(
     //
 
     init {
-        val isRunningDsu = DevicePropUtils.isDsuRunning()
+        val isRunningDsu = SlotPartitionManager.isRunningInDsu() || DevicePropUtils.isDsuRunning()
         _uiState.update { it.copy(isDsuRunning = isRunningDsu) }
 
         if (isRunningDsu) {
             updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
+            // Suppress dangerous system DSU notification in guest OS so user uses DSU Sideloader safely
+            viewModelScope.launch(Dispatchers.IO) {
+                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").exec()
+            }
         } else if (session.isRoot()) {
             PrivilegedProvider.run {
                 val inUse = isInUse
@@ -120,6 +124,10 @@ class HomeViewModel @Inject constructor(
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
                     return@run
                 }
+            }
+            // Ensure com.android.dynsystem is enabled on host OS
+            viewModelScope.launch(Dispatchers.IO) {
+                Shell.cmd("pm enable com.android.dynsystem 2>/dev/null").exec()
             }
         }
     }
@@ -383,17 +391,19 @@ class HomeViewModel @Inject constructor(
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
             val isSticky = readBoolPref(AppPrefs.STICKY_DSU, default = true)
-            val hasPhysicalSlot = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false) || SlotPartitionManager.hasFlashedPhysicalSlot
+            val hasPhysicalSlot = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false) ||
+                SlotPartitionManager.hasSecondaryPhysicalSlot()
+            if (hasPhysicalSlot && SlotPartitionManager.isAbDevice()) {
+                val targetSlot = SlotPartitionManager.getSecondarySlotIndex()
+                SlotPartitionManager.setActiveBootSlot(targetSlot)
+                Log.d(tag, "RebootToDynOS: Switched active slot to $targetSlot")
+            }
             try {
                 PrivilegedProvider.run {
                     setEnable(true, !isSticky)
                 }
             } catch (e: Exception) {
                 Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
-            }
-            if (hasPhysicalSlot && SlotPartitionManager.isAbDevice()) {
-                val targetSlot = SlotPartitionManager.getTargetSlotIndex()
-                SlotPartitionManager.setActiveBootSlot(targetSlot)
             }
             val flag = if (isSticky) "-s" else "-o"
             Shell.cmd("gsi_tool enable $flag", "svc power reboot || reboot").exec()
@@ -403,6 +413,11 @@ class HomeViewModel @Inject constructor(
     fun onClickRebootToHostOS() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
+            if (SlotPartitionManager.isAbDevice()) {
+                val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
+                SlotPartitionManager.setActiveBootSlot(primarySlot)
+                Log.d(tag, "RebootToHostOS: Switched active slot to primary slot ($primarySlot)")
+            }
             try {
                 PrivilegedProvider.run {
                     setEnable(false, false)
@@ -410,26 +425,41 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
             }
-            if (SlotPartitionManager.isAbDevice()) {
-                val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
-                SlotPartitionManager.setActiveBootSlot(primarySlot)
-            }
             Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
         }
     }
 
-    fun onClickDiscardGsiAndStartInstallation() {
+    fun onClickDiscardGsiAndStartInstallation() = onClickDiscardInstalledGsiAndInstall()
+
+    fun onClickDiscardInstalledGsiAndInstall() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
-        PrivilegedProvider.run {
-            remove()
-            forceStopPackage("com.android.dynsystem")
-            startDSUInstallation()
+        viewModelScope.launch(Dispatchers.IO) {
+            if (SlotPartitionManager.isAbDevice()) {
+                val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
+                SlotPartitionManager.setActiveBootSlot(primarySlot)
+            }
+            SlotPartitionManager.setSecondaryPhysicalSlot(false)
+            updateBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, false)
+            PrivilegedProvider.run {
+                remove()
+                forceStopPackage("com.android.dynsystem")
+                startDSUInstallation()
+            }
         }
     }
 
     fun onClickDiscardGsi() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
+            val isRunningInsideDsu = SlotPartitionManager.isRunningInDsu() || _uiState.value.isDsuRunning || DevicePropUtils.isDsuRunning()
+
+            // ALWAYS reset boot slot to Primary (Slot A) BEFORE wiping DSU!
+            if (SlotPartitionManager.isAbDevice()) {
+                val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
+                SlotPartitionManager.setActiveBootSlot(primarySlot)
+                Log.d(tag, "Discard: Reset active boot slot to primary slot ($primarySlot)")
+            }
+
             try {
                 PrivilegedProvider.run {
                     remove()
@@ -438,12 +468,20 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(tag, "Error removing DSU: ${e.message}")
             }
+
             Shell.cmd("gsi_tool wipe").exec()
-            SlotPartitionManager.hasFlashedPhysicalSlot = false
+            SlotPartitionManager.setSecondaryPhysicalSlot(false)
             updateBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, false)
             _uiState.update { it.copy(isDsuInstalled = false, isDsuRunning = false) }
+
             dismissSheet()
             resetInstallationCard()
+
+            // If we are currently running inside DSU and discarded, reboot immediately to primary OS!
+            if (isRunningInsideDsu) {
+                Log.d(tag, "Discarded from inside DSU, rebooting to primary OS...")
+                Shell.cmd("svc power reboot || reboot").exec()
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package curiousnom.dsusideloader.core
 
+import android.content.Context
 import android.util.Log
 import com.topjohnwu.superuser.Shell
 import curiousnom.dsusideloader.util.DevicePropUtils
@@ -44,16 +45,78 @@ object SlotPartitionManager {
         return if (slot == "Slot B") "_b" else "_a"
     }
 
+    fun getCurrentSlotIndex(): Int {
+        return if (getCurrentSlotSuffix() == "_b") 1 else 0
+    }
+
+    /**
+     * Determines whether we are currently running inside DSU (guest OS).
+     * Checks multiple indicators:
+     * 1. DevicePropUtils.isDsuRunning()
+     * 2. gsi_tool status containing "running"
+     * 3. Root property ro.gsid.image_installed == "1"
+     */
+    fun isRunningInDsu(): Boolean {
+        if (DevicePropUtils.isDsuRunning()) return true
+        return try {
+            val status = Shell.cmd("gsi_tool status 2>/dev/null").exec().out.joinToString(" ")
+            if (status.contains("running")) return true
+            val prop = Shell.cmd("getprop ro.gsid.image_installed").exec().out.firstOrNull()?.trim()
+            prop == "1"
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Returns the slot index of the Primary (Host) OS.
+     * When running the host OS, it's the current slot.
+     * When running inside DSU (guest OS), the host OS is the other slot.
+     */
+    fun getPrimarySlotIndex(): Int {
+        val current = getCurrentSlotIndex()
+        return if (isRunningInDsu()) 1 - current else current
+    }
+
+    fun getPrimarySlotSuffix(): String {
+        return if (getPrimarySlotIndex() == 0) "_a" else "_b"
+    }
+
+    /**
+     * Returns the slot index of the Secondary (Guest/DSU) OS.
+     * When running the host OS, the secondary slot is the other slot.
+     * When running inside DSU, the secondary slot is the current slot.
+     */
+    fun getSecondarySlotIndex(): Int {
+        val current = getCurrentSlotIndex()
+        return if (isRunningInDsu()) current else 1 - current
+    }
+
+    fun getSecondarySlotSuffix(): String {
+        return if (getSecondarySlotIndex() == 0) "_a" else "_b"
+    }
+
     fun getTargetSlotSuffix(): String {
-        return if (getCurrentSlotSuffix() == "_a") "_b" else "_a"
+        return getSecondarySlotSuffix()
     }
 
     fun getTargetSlotIndex(): Int {
-        return if (getCurrentSlotSuffix() == "_a") 1 else 0
+        return getSecondarySlotIndex()
     }
 
-    fun getPrimarySlotIndex(): Int {
-        return if (getCurrentSlotSuffix() == "_a") 0 else 1
+    fun hasSecondaryPhysicalSlot(): Boolean {
+        if (hasFlashedPhysicalSlot) return true
+        val check = Shell.cmd("test -f /data/local/tmp/.dsu_dualboot_active && echo yes").exec()
+        return check.out.contains("yes")
+    }
+
+    fun setSecondaryPhysicalSlot(active: Boolean) {
+        hasFlashedPhysicalSlot = active
+        if (active) {
+            Shell.cmd("touch /data/local/tmp/.dsu_dualboot_active").exec()
+        } else {
+            Shell.cmd("rm -f /data/local/tmp/.dsu_dualboot_active").exec()
+        }
     }
 
     /**
@@ -153,6 +216,9 @@ object SlotPartitionManager {
             val cmd = "dd if='${tempFile.absolutePath}' of='$blockDev' bs=4M"
             val result = Shell.cmd(cmd).exec()
             val success = result.isSuccess
+            if (success) {
+                setSecondaryPhysicalSlot(true)
+            }
             Log.d(TAG, "Flashed $partitionName to $blockDev: success=$success (exitCode=${result.code})")
             return success
         } catch (e: Exception) {
@@ -185,18 +251,65 @@ object SlotPartitionManager {
         }
     }
 
+    fun ensureBootctlExtracted(context: Context) {
+        try {
+            val dest = File(context.cacheDir, "bootctl")
+            if (!dest.exists() || dest.length() == 0L) {
+                context.assets.open("bootctl").use { input ->
+                    FileOutputStream(dest).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }
+            Shell.cmd(
+                "cp '${dest.absolutePath}' /data/local/tmp/bootctl",
+                "chmod 755 /data/local/tmp/bootctl",
+            ).exec()
+            Log.d(TAG, "Extracted bootctl to /data/local/tmp/bootctl")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to extract bundled bootctl: ${e.message}")
+        }
+    }
+
     /**
      * Switches the active boot slot using bootctl.
+     * Tries system bootctl, bundled bootctl in /data/local/tmp, and other known paths.
      */
     fun setActiveBootSlot(slotIndex: Int): Boolean {
-        val result = Shell.cmd("bootctl set-active-boot-slot $slotIndex").exec()
-        val success = result.isSuccess
-        Log.d(TAG, "bootctl set-active-boot-slot $slotIndex: success=$success")
-        return success
+        Log.d(TAG, "setActiveBootSlot: Requesting active boot slot -> $slotIndex")
+
+        // 1. Try system bootctl in PATH
+        val r1 = Shell.cmd("bootctl set-active-boot-slot $slotIndex").exec()
+        if (r1.isSuccess) {
+            Log.d(TAG, "bootctl set-active-boot-slot $slotIndex succeeded via PATH")
+            return true
+        }
+
+        // 2. Try candidate locations with vendor lib fallback
+        val candidates = listOf(
+            "/data/local/tmp/bootctl",
+            "/data/local/tmp/bootctl.bin",
+            "/data/adb/bootctl",
+            "/data/adb/ksu/bin/bootctl",
+            "/data/adb/ap/bin/bootctl",
+        )
+        for (path in candidates) {
+            val cmd = "export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/vendor/lib64:/system/lib64; test -x $path && $path set-active-boot-slot $slotIndex"
+            val r = Shell.cmd(cmd).exec()
+            if (r.isSuccess) {
+                Log.d(TAG, "Switched active boot slot to $slotIndex using $path")
+                return true
+            }
+        }
+
+        Log.e(TAG, "Failed to switch active boot slot to $slotIndex (all methods failed)")
+        return false
     }
 
     fun markBootSuccessful(): Boolean {
-        val result = Shell.cmd("bootctl mark-boot-successful").exec()
-        return result.isSuccess
+        val r1 = Shell.cmd("bootctl mark-boot-successful").exec()
+        if (r1.isSuccess) return true
+        val r2 = Shell.cmd("export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/vendor/lib64:/system/lib64; /data/local/tmp/bootctl mark-boot-successful").exec()
+        return r2.isSuccess
     }
 }

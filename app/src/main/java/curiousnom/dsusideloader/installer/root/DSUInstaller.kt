@@ -274,7 +274,7 @@ class DSUInstaller(
                         cacheDir = application.cacheDir,
                     )
                     if (flashed) {
-                        SlotPartitionManager.hasFlashedPhysicalSlot = true
+                        SlotPartitionManager.setSecondaryPhysicalSlot(true)
                         onInstallationProgressUpdate(1f, "$partitionName ($targetSlotName)")
                         Log.d(tag, "Physical partition $partitionName successfully flashed to $targetSlotName.")
                     } else {
