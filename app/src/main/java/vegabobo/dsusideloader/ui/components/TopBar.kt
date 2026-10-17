@@ -1,6 +1,7 @@
 package vegabobo.dsusideloader.ui.components
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -8,6 +9,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -23,6 +25,7 @@ import vegabobo.dsusideloader.ui.theme.surfaceContainer
 fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     barTitle: String,
+    statusBadge: String? = null,
     icon: ImageVector? = null,
     iconContentDescription: String? = "icon",
     onClickIcon: () -> Unit = {},
@@ -47,6 +50,21 @@ fun TopBar(
             }
         },
         actions = {
+            if (statusBadge != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.padding(end = 6.dp),
+                ) {
+                    Text(
+                        text = statusBadge,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
             if (icon != null) {
                 IconButton(
                     onClick = onClickIcon,

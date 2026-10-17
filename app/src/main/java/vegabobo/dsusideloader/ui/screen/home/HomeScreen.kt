@@ -54,6 +54,15 @@ fun Home(
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
 
+    val operationMode by homeViewModel.session.operationMode.collectAsStateWithLifecycle()
+    val modePill = when (operationMode) {
+        vegabobo.dsusideloader.util.OperationMode.SYSTEM_AND_ROOT -> "SYSTEM • ROOT"
+        vegabobo.dsusideloader.util.OperationMode.SYSTEM -> "SYSTEM"
+        vegabobo.dsusideloader.util.OperationMode.ROOT -> "ROOT"
+        vegabobo.dsusideloader.util.OperationMode.SHIZUKU -> "SHIZUKU"
+        vegabobo.dsusideloader.util.OperationMode.ADB -> "ADB"
+    }
+
     if (uiState.shouldKeepScreenOn) {
         KeepScreenOn()
     }
@@ -71,6 +80,7 @@ fun Home(
         topBar = {
             TopBar(
                 barTitle = stringResource(id = R.string.app_name),
+                statusBadge = modePill,
                 icon = Icons.Outlined.Settings,
                 scrollBehavior = it,
                 onClickIcon = { navigate(Destinations.Preferences) },
