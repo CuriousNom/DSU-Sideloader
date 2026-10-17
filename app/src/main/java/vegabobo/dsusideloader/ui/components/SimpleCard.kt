@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import vegabobo.dsusideloader.ui.theme.surfaceContainer
 
@@ -14,6 +15,7 @@ import vegabobo.dsusideloader.ui.theme.surfaceContainer
 fun SimpleCard(
     modifier: Modifier = Modifier,
     cardTitle: String = "",
+    cardIcon: ImageVector? = null,
     text: String = "",
     addToggle: Boolean = false,
     isToggleEnabled: Boolean = false,
@@ -27,6 +29,7 @@ fun SimpleCard(
     CardBox(
         modifier = modifier,
         cardTitle = cardTitle,
+        cardIcon = cardIcon,
         addToggle = addToggle,
         isToggleChecked = isToggleEnabled,
         addPadding = addPadding,

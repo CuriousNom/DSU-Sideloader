@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +41,7 @@ fun UserdataCard(
     CardBox(
         modifier = modifier,
         cardTitle = stringResource(id = R.string.userdata_size),
+        cardIcon = Icons.Outlined.Storage,
         addToggle = true,
         isToggleEnabled = !isEnabled,
         isToggleChecked = uiState.isSelected,

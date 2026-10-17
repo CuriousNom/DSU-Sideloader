@@ -3,6 +3,8 @@ package vegabobo.dsusideloader.ui.cards
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,6 +22,7 @@ fun DsuInfoCard(
     SimpleCard(
         modifier = modifier,
         cardTitle = stringResource(id = R.string.what_is_dsu),
+        cardIcon = Icons.Outlined.Description,
         text = stringResource(id = R.string.what_is_dsu_description),
         justifyText = true,
     ) {

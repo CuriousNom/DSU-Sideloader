@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import vegabobo.dsusideloader.ui.theme.surfaceContainer
 
@@ -25,6 +26,7 @@ import vegabobo.dsusideloader.ui.theme.surfaceContainer
 fun CardBox(
     modifier: Modifier = Modifier,
     cardTitle: String = "",
+    cardIcon: ImageVector? = null,
     addToggle: Boolean = false,
     isToggleChecked: Boolean = false,
     isToggleEnabled: Boolean = true,
@@ -62,7 +64,7 @@ fun CardBox(
                             .padding(bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CardTitle(modifier.weight(1F), cardTitle = cardTitle)
+                        CardTitle(modifier.weight(1F), cardTitle = cardTitle, icon = cardIcon)
                         Spacer(modifier = Modifier.padding(4.dp))
                         val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                         Switch(
@@ -78,6 +80,7 @@ fun CardBox(
                 } else {
                     CardTitle(
                         cardTitle = cardTitle,
+                        icon = cardIcon,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }

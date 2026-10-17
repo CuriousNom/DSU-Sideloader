@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.InstallMobile
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -55,6 +57,7 @@ fun InstallationCard(
 
     CardBox(
         cardTitle = stringResource(R.string.installation),
+        cardIcon = Icons.Outlined.InstallMobile,
         addToggle = false,
         modifier = modifier,
     ) {
