@@ -42,7 +42,7 @@ open class DsuInstallationHandler(
                 "com.android.dynsystem",
                 "com.android.dynsystem.VerificationActivity",
             )
-            dynIntent.flags += Intent.FLAG_ACTIVITY_NEW_TASK
+            dynIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
             dynIntent.action = "android.os.image.action.START_INSTALL"
             dynIntent.data = fileUri
             dynIntent.putExtra("KEY_USERDATA_SIZE", userdataSize)

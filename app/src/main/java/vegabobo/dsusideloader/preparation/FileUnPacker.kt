@@ -29,13 +29,13 @@ class FileUnPacker(
         outputStr: OutputStream,
         onReadedBuffer: (Long) -> Unit,
     ) {
-        val buffer = ByteArray(8 * 1024)
+        val buffer = ByteArray(128 * 1024)
         var n: Int
         var readed: Long = 0
         while (-1 != inputStr.read(buffer)
                 .also { n = it } && !installationJob.isCancelled
         ) {
-            readed += buffer.size
+            readed += n
             onReadedBuffer(readed)
             outputStr.write(buffer, 0, n)
         }
