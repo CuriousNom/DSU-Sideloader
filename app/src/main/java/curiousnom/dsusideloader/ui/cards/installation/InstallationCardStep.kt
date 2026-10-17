@@ -252,10 +252,10 @@ fun InstallationCardStep(
         InstallationStep.INSTALL_SUCCESS_REBOOT_DYN_OS ->
             ProgressableCardContent(
                 text = stringResource(R.string.installation_finished),
-                textFirstButton = stringResource(id = R.string.reboot_into_dsu),
-                onClickFirstButton = onClickRebootToDynOS,
-                textSecondButton = stringResource(id = R.string.discard),
-                onClickSecondButton = onClickDiscardDsu,
+                textFirstButton = if (isDualBooting) "" else stringResource(id = R.string.reboot_into_dsu),
+                onClickFirstButton = if (isDualBooting) null else onClickRebootToDynOS,
+                textSecondButton = if (isDualBooting) "" else stringResource(id = R.string.discard),
+                onClickSecondButton = if (isDualBooting) null else onClickDiscardDsu,
             )
         InstallationStep.REQUIRES_ADB_CMD_TO_CONTINUE ->
             ProgressableCardContent(
