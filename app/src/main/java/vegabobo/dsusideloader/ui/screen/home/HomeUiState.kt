@@ -34,6 +34,7 @@ enum class AdditionalCardState {
     MISSING_READ_LOGS_PERMISSION,
     GRANTING_READ_LOGS_PERMISSION,
     BOOTLOADER_UNLOCKED_WARNING,
+    PAGE_SIZE_16KB_WARNING,
 }
 
 enum class SheetDisplayState {
@@ -54,6 +55,7 @@ data class HomeUiState(
     val installationLogs: String = "",
     val passedInitialChecks: Boolean = false,
     val shouldKeepScreenOn: Boolean = false,
+    val is16KbPageSize: Boolean = false,
 ) {
     fun isInstalling(): Boolean {
         return installationCard.installationStep != InstallationStep.NOT_INSTALLING

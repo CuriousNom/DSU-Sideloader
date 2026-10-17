@@ -23,6 +23,7 @@ import vegabobo.dsusideloader.ui.cards.ImageSizeCard
 import vegabobo.dsusideloader.ui.cards.UserdataCard
 import vegabobo.dsusideloader.ui.cards.installation.InstallationCard
 import vegabobo.dsusideloader.ui.cards.warnings.GrantingPermissionCard
+import vegabobo.dsusideloader.ui.cards.warnings.PageSizeWarningCard
 import vegabobo.dsusideloader.ui.cards.warnings.RequiresLogPermissionCard
 import vegabobo.dsusideloader.ui.cards.warnings.SetupStorage
 import vegabobo.dsusideloader.ui.cards.warnings.StorageWarningCard
@@ -104,6 +105,9 @@ fun Home(
 
                     AdditionalCardState.BOOTLOADER_UNLOCKED_WARNING ->
                         UnlockedBootloaderCard { homeViewModel.onClickBootloaderUnlockedWarning() }
+
+                    AdditionalCardState.PAGE_SIZE_16KB_WARNING ->
+                        PageSizeWarningCard { homeViewModel.onClick16KbWarning() }
 
                     AdditionalCardState.NONE -> {}
                 }

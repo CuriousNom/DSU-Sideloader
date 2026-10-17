@@ -24,6 +24,12 @@
     <string name="unlocked_bl_warn">Unlocked bootloader</string>
     <string name="unlocked_bl_warn_desc">DSU Sideloader requires unlocked bootloader, installing images with locked bootloader may be dangerous in some devices, before using this app, you: \n- MUST unlock bootloader.\n- MUST have some way to restore device stock firmware.\n- RECOMMENDED to do a full backup.\nThis app have been made to be used by developers and advanced users, you have been warned.</string>
 
+    <string name="page_size_16kb_warn">16 KB Page Size Detected</string>
+    <string name="page_size_16kb_warn_desc">Your device kernel is running with a 16 KB memory page size (Android 15+). Standard 4 KB GSIs will fail to boot or crash on this device.\n\nPlease ensure your GSI image is compiled with 16 KB page size alignment before installing.</string>
+    <string name="device_info">Device information</string>
+    <string name="kernel_page_size">Kernel page size</string>
+    <string name="kernel_page_size_desc">System page size: %s</string>
+
     <!-- Installation card -->
     <string name="select_gsi_info">Select a file to be installed</string>
     <string name="dsu_already_installed">A DSU installation is already present.</string>

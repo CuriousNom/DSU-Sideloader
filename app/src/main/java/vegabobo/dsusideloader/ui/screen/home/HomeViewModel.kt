@@ -149,8 +149,17 @@ class HomeViewModel @Inject constructor(
                 return@launch
             }
 
+            if (DevicePropUtils.is16KbPageSize()) {
+                val seen16KbWarning = readBoolPref(AppPrefs.SEEN_16KB_PAGE_SIZE_WARNING)
+                if (!seen16KbWarning) {
+                    _uiState.update { it.copy(passedInitialChecks = false, is16KbPageSize = true) }
+                    updateAdditionalCardState(AdditionalCardState.PAGE_SIZE_16KB_WARNING)
+                    return@launch
+                }
+            }
+
             updateAdditionalCardState(AdditionalCardState.NONE)
-            _uiState.update { it.copy(passedInitialChecks = true) }
+            _uiState.update { it.copy(passedInitialChecks = true, is16KbPageSize = DevicePropUtils.is16KbPageSize()) }
         }
     }
 
@@ -180,6 +189,13 @@ class HomeViewModel @Inject constructor(
     fun onClickBootloaderUnlockedWarning() {
         viewModelScope.launch {
             updateBoolPref(AppPrefs.BOOTLOADER_UNLOCKED_WARNING, true)
+            initialChecks()
+        }
+    }
+
+    fun onClick16KbWarning() {
+        viewModelScope.launch {
+            updateBoolPref(AppPrefs.SEEN_16KB_PAGE_SIZE_WARNING, true)
             initialChecks()
         }
     }

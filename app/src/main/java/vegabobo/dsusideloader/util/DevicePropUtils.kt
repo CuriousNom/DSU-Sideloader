@@ -23,6 +23,23 @@ class DevicePropUtils {
             return getSystemProperty("ro.boot.dynamic_partitions") == "true"
         }
 
+        fun getKernelPageSize(): Long {
+            return try {
+                android.system.Os.sysconf(android.system.OsConstants._SC_PAGESIZE)
+            } catch (e: Exception) {
+                4096L
+            }
+        }
+
+        fun is16KbPageSize(): Boolean {
+            return getKernelPageSize() == 16384L
+        }
+
+        fun getKernelPageSizeFormatted(): String {
+            val size = getKernelPageSize()
+            return if (size > 0L) "${size / 1024} KB" else "4 KB"
+        }
+
         private fun getSystemProperty(key: String): String {
             val systemPropertiesClass = Class.forName("android.os.SystemProperties")
             val value = HiddenApiBypass.invoke(systemPropertiesClass, null, "get", key)

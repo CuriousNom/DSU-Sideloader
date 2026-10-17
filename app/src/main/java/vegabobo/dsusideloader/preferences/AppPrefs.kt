@@ -21,4 +21,5 @@ object AppPrefs {
     const val DISABLE_STORAGE_CHECK = "disable_storage_check"
     const val FULL_LOGCAT_LOGGING = "full_logcat_logging"
     const val STICKY_DSU = "sticky_dsu"
+    const val SEEN_16KB_PAGE_SIZE_WARNING = "seen_16kb_page_size_warning"
 }

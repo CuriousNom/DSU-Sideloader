@@ -100,6 +100,21 @@ fun AboutScreen(
             )
         }
         Title(
+            stringResource(id = R.string.device_info),
+            modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
+        )
+        SimpleCard(
+            addPadding = false,
+        ) {
+            PreferenceItem(
+                title = stringResource(id = R.string.kernel_page_size),
+                description = stringResource(
+                    id = R.string.kernel_page_size_desc,
+                    vegabobo.dsusideloader.util.DevicePropUtils.getKernelPageSizeFormatted(),
+                ),
+            )
+        }
+        Title(
             stringResource(id = R.string.collaborators),
             modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
         )
