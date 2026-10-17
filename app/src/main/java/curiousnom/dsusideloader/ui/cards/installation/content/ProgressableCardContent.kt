@@ -81,23 +81,25 @@ fun ProgressableCardContent(
             }
         }
     }
-    Spacer(modifier = Modifier.padding(top = 4.dp))
-    Row {
-        Spacer(modifier = Modifier.weight(1F))
-        if (onClickSecondButton != null) {
-            SecondaryButton(
-                text = textSecondButton,
-                onClick = onClickSecondButton,
-            )
-        }
-        if (onClickFirstButton != null && onClickSecondButton != null) {
-            Spacer(modifier = Modifier.padding(end = 6.dp))
-        }
-        if (onClickFirstButton != null) {
-            PrimaryButton(
-                text = textFirstButton,
-                onClick = onClickFirstButton,
-            )
+    if (onClickFirstButton != null || onClickSecondButton != null) {
+        Spacer(modifier = Modifier.padding(top = 4.dp))
+        Row {
+            Spacer(modifier = Modifier.weight(1F))
+            if (onClickSecondButton != null) {
+                SecondaryButton(
+                    text = textSecondButton,
+                    onClick = onClickSecondButton,
+                )
+            }
+            if (onClickFirstButton != null && onClickSecondButton != null) {
+                Spacer(modifier = Modifier.padding(end = 6.dp))
+            }
+            if (onClickFirstButton != null) {
+                PrimaryButton(
+                    text = textFirstButton,
+                    onClick = onClickFirstButton,
+                )
+            }
         }
     }
 }

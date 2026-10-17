@@ -23,7 +23,7 @@ fun InstallationCardStep(
     onClickDiscardInstalledGsiAndInstall: () -> Unit,
     onClickDiscardDsu: () -> Unit,
     onClickRebootToDynOS: () -> Unit,
-    onClickRebootToHostOS: () -> Unit = {},
+    @Suppress("UNUSED_PARAMETER") onClickRebootToHostOS: () -> Unit = {},
     onClickViewLogs: () -> Unit,
     onClickViewCommands: () -> Unit,
 ) {
@@ -46,8 +46,6 @@ fun InstallationCardStep(
         InstallationStep.DSU_ALREADY_RUNNING_DYN_OS ->
             ProgressableCardContent(
                 text = stringResource(R.string.secondary_os_running_desc),
-                textFirstButton = stringResource(id = R.string.reboot_to_primary_os),
-                onClickFirstButton = onClickRebootToHostOS,
             )
         InstallationStep.PROCESSING ->
             ProgressableCardContent(
