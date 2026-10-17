@@ -11,6 +11,8 @@ object ImageInspector {
         GZIP("GZIP Archive"),
         XZ("XZ Archive"),
         ZIP("ZIP Package"),
+        PAYLOAD("OTA Payload (payload.bin)"),
+        PAYLOAD_ZIP("OTA Package (payload.bin)"),
         RAW("Raw Image"),
         UNKNOWN("Image"),
     }
@@ -29,6 +31,15 @@ object ImageInspector {
         }
 
         if (totalRead < 4) return ImageFormat.UNKNOWN
+
+        // Check OTA payload (0x43 0x72 0x41 0x55 -> 'C' 'r' 'A' 'U')
+        if (header[0] == 'C'.code.toByte() &&
+            header[1] == 'r'.code.toByte() &&
+            header[2] == 'A'.code.toByte() &&
+            header[3] == 'U'.code.toByte()
+        ) {
+            return ImageFormat.PAYLOAD
+        }
 
         // Check Android Sparse image (0xED26FF3A -> 3A FF 26 ED in little-endian)
         if (header[0] == 0x3A.toByte() &&

@@ -14,7 +14,7 @@ open class ImagePartition(
 )
 
 enum class Type {
-    NONE, SINGLE_SYSTEM_IMAGE, DSU_PACKAGE, URL, MULTIPLE_IMAGES
+    NONE, SINGLE_SYSTEM_IMAGE, DSU_PACKAGE, URL, MULTIPLE_IMAGES, PAYLOAD
 }
 
 open class DSUInstallationSource(
@@ -34,6 +34,11 @@ open class DSUInstallationSource(
         override var uri: Uri = Uri.EMPTY,
         override var type: Type = Type.DSU_PACKAGE,
     ) : DSUInstallationSource(Type.DSU_PACKAGE)
+
+    data class PayloadPackage(
+        override var uri: Uri = Uri.EMPTY,
+        override var type: Type = Type.PAYLOAD,
+    ) : DSUInstallationSource(Type.PAYLOAD)
 
     data class Url(
         override var uri: Uri,

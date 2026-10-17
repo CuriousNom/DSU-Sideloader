@@ -44,7 +44,15 @@ class Preparation(
             }
 
             "zip" -> {
-                DSUInstallationSource.DsuPackage(userSelectedFileUri)
+                if (curiousnom.dsusideloader.core.PayloadManager.isPayloadZip(storageManager.context, userSelectedFileUri)) {
+                    DSUInstallationSource.PayloadPackage(userSelectedFileUri)
+                } else {
+                    DSUInstallationSource.DsuPackage(userSelectedFileUri)
+                }
+            }
+
+            "bin" -> {
+                DSUInstallationSource.PayloadPackage(userSelectedFileUri)
             }
 
             else -> {

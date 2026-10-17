@@ -24,6 +24,8 @@ class StorageManager(
     private val preferences: DataStore<Preferences>,
 ) {
 
+    val context: Context get() = appContext
+
     object Constants {
         const val WORKSPACE_FOLDER = "workspace_dsuhelper"
     }

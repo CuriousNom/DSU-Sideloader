@@ -663,12 +663,13 @@ class HomeViewModel @Inject constructor(
 
     fun onFileSelectionResult(uri: Uri) {
         val filename = FilenameUtils.queryName(application.contentResolver, uri)
-        val extension = filename.substringAfterLast(".", "")
+        val extension = filename.substringAfterLast(".", "").lowercase()
         val supportedFiles = arrayListOf("gz", "xz", "img", "gzip")
 
-        // DSU packages (zip files), are only supported in R+
+        // DSU packages (zip files and payload.bin), are only supported in R+
         if (Build.VERSION.SDK_INT > 29) {
             supportedFiles.add("zip")
+            supportedFiles.add("bin")
         }
         val isFileSupported = supportedFiles.contains(extension)
         Log.d(tag, "isFileSupported: $isFileSupported, extension: $extension, filename: $filename")
@@ -686,9 +687,18 @@ class HomeViewModel @Inject constructor(
         session.userSelection.selectedFileUri = uri
         viewModelScope.launch(Dispatchers.IO) {
             val formatInfo = try {
-                application.contentResolver.openInputStream(uri)?.use { stream ->
-                    ImageInspector.inspect(stream).displayName
-                } ?: ""
+                val isPayloadZip = filename.endsWith(".zip", ignoreCase = true) &&
+                    curiousnom.dsusideloader.core.PayloadManager.isPayloadZip(application, uri)
+                val isPayloadBin = filename.endsWith(".bin", ignoreCase = true) &&
+                    curiousnom.dsusideloader.core.PayloadManager.isPayloadBin(application, uri)
+
+                when {
+                    isPayloadZip -> ImageInspector.ImageFormat.PAYLOAD_ZIP.displayName
+                    isPayloadBin -> ImageInspector.ImageFormat.PAYLOAD.displayName
+                    else -> application.contentResolver.openInputStream(uri)?.use { stream ->
+                        ImageInspector.inspect(stream).displayName
+                    } ?: ""
+                }
             } catch (e: Exception) {
                 ""
             }

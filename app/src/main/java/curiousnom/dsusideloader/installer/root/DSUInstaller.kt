@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.os.SharedMemory
 import android.util.Log
+import curiousnom.dsusideloader.core.PayloadManager
 import curiousnom.dsusideloader.core.SlotPartitionManager
 import curiousnom.dsusideloader.model.DSUInstallationSource
 import curiousnom.dsusideloader.model.ImagePartition
@@ -13,6 +14,8 @@ import curiousnom.dsusideloader.model.Type
 import curiousnom.dsusideloader.preparation.InstallationStep
 import curiousnom.dsusideloader.service.PrivilegedProvider
 import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileInputStream
 import java.io.InputStream
 import java.net.URL
 import java.nio.ByteBuffer
@@ -312,6 +315,130 @@ class DSUInstaller(
         return installImage(partitionName, uncompressedSize, inputStream)
     }
 
+    private fun installPayloadPackage(uri: Uri): Boolean {
+        try {
+            val realPath = PayloadManager.getRealPath(application, uri)
+            if (realPath == null) {
+                Log.e(tag, "Could not resolve real filesystem path for payload: $uri")
+                onInstallationError(InstallationStep.ERROR_CREATE_PARTITION, "Cannot resolve file path for payload package")
+                return false
+            }
+
+            Log.d(tag, "Resolved payload package path: $realPath")
+            val partitions = PayloadManager.listPartitions(application, realPath)
+            if (partitions.isEmpty()) {
+                Log.e(tag, "No partitions found in payload: $realPath")
+                onInstallationError(InstallationStep.ERROR_CREATE_PARTITION, "Invalid or empty OTA payload")
+                return false
+            }
+
+            val partitionNames = partitions.map { it.name }.toSet()
+            Log.d(tag, "Found ${partitions.size} partitions in payload: ${partitionNames.joinToString(", ")}")
+
+            val workspaceDir = File("/data/local/tmp/dsu_payload_workspace")
+            if (workspaceDir.exists()) workspaceDir.deleteRecursively()
+            workspaceDir.mkdirs()
+
+            // 1. Physical boot/kernel partitions to flash to secondary slot
+            val physicalToFlash = partitions
+                .map { it.name }
+                .filter { SlotPartitionManager.isPhysicalPartition(it) }
+
+            if (physicalToFlash.isNotEmpty()) {
+                val targetSlotName = "Slot ${SlotPartitionManager.getTargetSlotSuffix().trimStart('_').uppercase()}"
+                Log.d(tag, "Extracting and flashing physical partitions to $targetSlotName: ${physicalToFlash.joinToString(", ")}")
+                onInstallationStepUpdate(InstallationStep.INSTALLING_ROOTED)
+
+                for (partName in physicalToFlash) {
+                    if (installationJob.isCancelled) {
+                        safeRollback()
+                        return false
+                    }
+                    onInstallationProgressUpdate(0f, "$partName ($targetSlotName)")
+                    val extractedFile = PayloadManager.extractPartition(
+                        context = application,
+                        targetPath = realPath,
+                        partitionName = partName,
+                        outputDir = workspaceDir,
+                    ) { progress ->
+                        onInstallationProgressUpdate(progress, "$partName ($targetSlotName)")
+                    }
+
+                    if (extractedFile != null && extractedFile.exists()) {
+                        val flashed = SlotPartitionManager.flashPhysicalPartition(
+                            partitionName = partName,
+                            imageFile = extractedFile,
+                        )
+                        extractedFile.delete()
+                        if (flashed) {
+                            Log.d(tag, "Successfully flashed physical partition $partName to $targetSlotName")
+                            onInstallationProgressUpdate(1f, "$partName ($targetSlotName)")
+                        } else {
+                            Log.w(tag, "Warning: Failed to flash physical partition $partName to $targetSlotName")
+                        }
+                    } else {
+                        Log.w(tag, "Failed to extract physical partition $partName")
+                    }
+                }
+                SlotPartitionManager.setSecondaryPhysicalSlot(true)
+            }
+
+            // 2. Logical dynamic partitions to install into DSU
+            val logicalToInstall = partitions
+                .map { it.name }
+                .filter { isPartitionSupported(it) }
+
+            Log.d(tag, "Installing logical partitions into DSU: ${logicalToInstall.joinToString(", ")}")
+
+            for (partName in logicalToInstall) {
+                if (installationJob.isCancelled) {
+                    safeRollback()
+                    return false
+                }
+                onCreatePartition(partName)
+                onInstallationProgressUpdate(0f, "$partName (extracting)")
+
+                val extractedFile = PayloadManager.extractPartition(
+                    context = application,
+                    targetPath = realPath,
+                    partitionName = partName,
+                    outputDir = workspaceDir,
+                ) { progress ->
+                    onInstallationProgressUpdate(progress, "$partName (extracting)")
+                }
+
+                if (extractedFile == null || !extractedFile.exists()) {
+                    Log.e(tag, "Failed to extract logical partition $partName from payload")
+                    safeRollback()
+                    onInstallationError(InstallationStep.ERROR_CREATE_PARTITION, "Failed to extract $partName")
+                    return false
+                }
+
+                val uncompressedSize = extractedFile.length()
+                Log.d(tag, "Writing extracted $partName ($uncompressedSize bytes) into DSU...")
+                val installOk = FileInputStream(extractedFile).use { stream ->
+                    installImage(partName, uncompressedSize, stream)
+                }
+                extractedFile.delete()
+
+                if (!installOk || installationJob.isCancelled) {
+                    safeRollback()
+                    return false
+                }
+            }
+
+            if (workspaceDir.exists()) {
+                workspaceDir.deleteRecursively()
+            }
+            return true
+        } catch (e: Exception) {
+            Log.e(tag, "Error installing payload package: ${e.message}", e)
+            safeRollback()
+            onInstallationError(InstallationStep.ERROR_CREATE_PARTITION, "payload: ${e.message}")
+            return false
+        }
+    }
+
     private fun startInstallation() {
         try {
             PrivilegedProvider.getService().setDynProp()
@@ -365,6 +492,10 @@ class DSUInstaller(
                     openInputStream(dsuInstallation.uri)?.use { stream ->
                         installStreamingZipUpdate(stream)
                     } ?: false
+                }
+
+                Type.PAYLOAD -> {
+                    installPayloadPackage(dsuInstallation.uri)
                 }
 
                 Type.URL -> {

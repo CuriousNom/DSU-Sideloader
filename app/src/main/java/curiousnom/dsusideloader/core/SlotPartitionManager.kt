@@ -177,6 +177,39 @@ object SlotPartitionManager {
     }
 
     /**
+     * Flashes an image file of a physical partition directly to the target inactive slot.
+     */
+    fun flashPhysicalPartition(
+        partitionName: String,
+        imageFile: File,
+        targetSlotSuffix: String = getTargetSlotSuffix(),
+    ): Boolean {
+        val blockDev = findBlockDevice(partitionName, targetSlotSuffix)
+        if (blockDev == null) {
+            Log.e(TAG, "Could not find block device for $partitionName$targetSlotSuffix")
+            return false
+        }
+
+        try {
+            if (partitionName.lowercase().startsWith("vbmeta") && imageFile.length() >= 124) {
+                patchVbmetaFile(imageFile)
+            }
+
+            val cmd = "dd if='${imageFile.absolutePath}' of='$blockDev' bs=4M"
+            val result = Shell.cmd(cmd).exec()
+            val success = result.isSuccess
+            if (success) {
+                setSecondaryPhysicalSlot(true)
+            }
+            Log.d(TAG, "Flashed $partitionName to $blockDev: success=$success (exitCode=${result.code})")
+            return success
+        } catch (e: Exception) {
+            Log.e(TAG, "Error flashing $partitionName to $blockDev: ${e.message}", e)
+            return false
+        }
+    }
+
+    /**
      * Flashes an input stream of a physical partition to the target inactive slot.
      * Uses 64KB chunk streaming to disk to avoid OutOfMemoryError on large partitions.
      */
