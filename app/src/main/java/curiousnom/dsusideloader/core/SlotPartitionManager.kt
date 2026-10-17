@@ -57,7 +57,9 @@ object SlotPartitionManager {
      * 3. Root property ro.gsid.image_installed == "1"
      */
     fun isRunningInDsu(): Boolean {
-        if (DevicePropUtils.isDsuRunning()) return true
+        if (getCurrentSlotSuffix() == "_b" || DevicePropUtils.getActiveSlot() == "Slot B" || DevicePropUtils.isDsuRunning()) {
+            return true
+        }
         return try {
             val status = Shell.cmd("gsi_tool status 2>/dev/null").exec().out.joinToString(" ")
             if (status.contains("running")) return true

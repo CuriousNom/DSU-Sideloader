@@ -24,12 +24,16 @@ class RebootToPrimaryReceiver : BroadcastReceiver() {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    DualBootNotificationHelper.dismissNotification(context)
                     SlotPartitionManager.ensureBootctlExtracted(context)
                     val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
-                    SlotPartitionManager.setActiveBootSlot(primarySlot)
-                    Log.d(TAG, "Switched active slot to primary slot ($primarySlot)")
-                    Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
+                    val switched = SlotPartitionManager.setActiveBootSlot(primarySlot)
+                    if (switched) {
+                        DualBootNotificationHelper.dismissNotification(context)
+                        Log.d(TAG, "Switched active slot to primary slot ($primarySlot)")
+                        Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
+                    } else {
+                        Log.e(TAG, "Cannot reboot to primary OS: slot switch failed (root required)")
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error rebooting to primary slot: ${e.message}", e)
                 } finally {

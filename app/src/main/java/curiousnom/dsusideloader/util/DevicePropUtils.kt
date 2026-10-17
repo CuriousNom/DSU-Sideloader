@@ -43,6 +43,9 @@ class DevicePropUtils {
         }
 
         fun isDsuRunning(): Boolean {
+            if (getActiveSlot() == "Slot B" || getSystemProperty("ro.boot.slot_suffix") == "_b") {
+                return true
+            }
             val prop = getSystemProperty("ro.gsid.image_installed")
             if (prop == "1") return true
             return try {

@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -142,6 +143,24 @@ class HomeViewModel @Inject constructor(
     }
 
     fun initialChecks() {
+        val isRunningDsu = SlotPartitionManager.isRunningInDsu() || DevicePropUtils.isDsuRunning()
+        if (isRunningDsu) {
+            updateAdditionalCardState(AdditionalCardState.NONE)
+            _uiState.update {
+                it.copy(
+                    passedInitialChecks = true,
+                    isDsuRunning = true,
+                    is16KbPageSize = DevicePropUtils.is16KbPageSize(),
+                )
+            }
+            updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
+            viewModelScope.launch(Dispatchers.IO) {
+                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").exec()
+                DualBootNotificationHelper.showGuestOsNotification(application)
+            }
+            return
+        }
+
         if (checkDynamicPartitions && !DevicePropUtils.hasDynamicPartitions()) {
             updateAdditionalCardState(AdditionalCardState.NO_DYNAMIC_PARTITIONS)
             return
@@ -425,14 +444,32 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onClickRebootToHostOS() {
-        updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
-            DualBootNotificationHelper.dismissNotification(application)
-            if (SlotPartitionManager.isAbDevice()) {
-                val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
+            SlotPartitionManager.ensureBootctlExtracted(application)
+            val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
+            val slotSwitched = if (SlotPartitionManager.isAbDevice()) {
                 SlotPartitionManager.setActiveBootSlot(primarySlot)
-                Log.d(tag, "RebootToHostOS: Switched active slot to primary slot ($primarySlot)")
+            } else {
+                true
             }
+
+            if (!slotSwitched && !session.isRoot()) {
+                Log.e(tag, "Cannot reboot to primary OS: slot switch failed without root")
+                withContext(Dispatchers.Main) {
+                    updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
+                    android.widget.Toast.makeText(
+                        application,
+                        "Root access is required to switch slots directly. To return to Primary OS: reboot to bootloader and run fastboot --set-active=a",
+                        android.widget.Toast.LENGTH_LONG,
+                    ).show()
+                }
+                return@launch
+            }
+
+            withContext(Dispatchers.Main) {
+                updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
+            }
+            DualBootNotificationHelper.dismissNotification(application)
             try {
                 PrivilegedProvider.run {
                     setEnable(false, false)

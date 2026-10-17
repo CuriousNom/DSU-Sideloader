@@ -48,8 +48,6 @@ fun InstallationCardStep(
                 text = stringResource(R.string.secondary_os_running_desc),
                 textFirstButton = stringResource(id = R.string.reboot_to_primary_os),
                 onClickFirstButton = onClickRebootToHostOS,
-                textSecondButton = stringResource(id = R.string.discard),
-                onClickSecondButton = onClickDiscardDsu,
             )
         InstallationStep.PROCESSING ->
             ProgressableCardContent(

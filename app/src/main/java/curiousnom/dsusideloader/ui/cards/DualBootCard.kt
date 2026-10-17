@@ -110,17 +110,13 @@ fun DualBootCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         PrimaryButton(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             text = stringResource(R.string.reboot_to_primary_os),
                             onClick = onClickRebootToHostOS,
-                        )
-                        SecondaryButton(
-                            text = stringResource(R.string.discard),
-                            onClick = onClickDiscardDsu,
                         )
                     }
                 }
