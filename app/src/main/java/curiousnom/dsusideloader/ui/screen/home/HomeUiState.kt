@@ -45,6 +45,7 @@ enum class SheetDisplayState {
     CANCEL_INSTALLATION,
     DISCARD_DSU,
     VIEW_LOGS,
+    FASTBOOT_INSTRUCTIONS,
 }
 
 data class HomeUiState(
@@ -61,6 +62,7 @@ data class HomeUiState(
     val isDsuInstalled: Boolean = false,
     val isStickyDsu: Boolean = true,
     val isStickyEnforced: Boolean = false,
+    val isRoot: Boolean = false,
 ) {
     fun isInstalling(): Boolean {
         return installationCard.installationStep != InstallationStep.NOT_INSTALLING

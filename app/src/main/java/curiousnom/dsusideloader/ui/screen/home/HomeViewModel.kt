@@ -105,7 +105,16 @@ class HomeViewModel @Inject constructor(
 
     init {
         val isRunningDsu = SlotPartitionManager.isRunningInDsu() || DevicePropUtils.isDsuRunning()
-        _uiState.update { it.copy(isDsuRunning = isRunningDsu) }
+        val isRooted = session.isRoot() || (Shell.isAppGrantedRoot() == true)
+        _uiState.update { it.copy(isDsuRunning = isRunningDsu, isRoot = isRooted) }
+
+        viewModelScope.launch {
+            session.operationMode.collect { opMode ->
+                val rooted = (opMode == OperationMode.SYSTEM_AND_ROOT || opMode == OperationMode.ROOT) ||
+                    (Shell.isAppGrantedRoot() == true)
+                _uiState.update { it.copy(isRoot = rooted) }
+            }
+        }
 
         if (isRunningDsu) {
             updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
@@ -150,6 +159,7 @@ class HomeViewModel @Inject constructor(
                 it.copy(
                     passedInitialChecks = true,
                     isDsuRunning = true,
+                    isRoot = session.isRoot() || (Shell.isAppGrantedRoot() == true),
                     is16KbPageSize = DevicePropUtils.is16KbPageSize(),
                 )
             }
@@ -203,7 +213,13 @@ class HomeViewModel @Inject constructor(
             }
 
             updateAdditionalCardState(AdditionalCardState.NONE)
-            _uiState.update { it.copy(passedInitialChecks = true, is16KbPageSize = DevicePropUtils.is16KbPageSize()) }
+            _uiState.update {
+                it.copy(
+                    passedInitialChecks = true,
+                    isRoot = session.isRoot() || (Shell.isAppGrantedRoot() == true),
+                    is16KbPageSize = DevicePropUtils.is16KbPageSize(),
+                )
+            }
         }
     }
 
@@ -444,6 +460,10 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onClickRebootToHostOS() {
+        if (!session.isRoot() && Shell.isAppGrantedRoot() != true) {
+            updateSheetState(SheetDisplayState.FASTBOOT_INSTRUCTIONS)
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             SlotPartitionManager.ensureBootctlExtracted(application)
             val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
@@ -453,15 +473,11 @@ class HomeViewModel @Inject constructor(
                 true
             }
 
-            if (!slotSwitched && !session.isRoot()) {
+            if (!slotSwitched && !session.isRoot() && Shell.isAppGrantedRoot() != true) {
                 Log.e(tag, "Cannot reboot to primary OS: slot switch failed without root")
                 withContext(Dispatchers.Main) {
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
-                    android.widget.Toast.makeText(
-                        application,
-                        "Root access is required to switch slots directly. To return to Primary OS: reboot to bootloader and run fastboot --set-active=a",
-                        android.widget.Toast.LENGTH_LONG,
-                    ).show()
+                    updateSheetState(SheetDisplayState.FASTBOOT_INSTRUCTIONS)
                 }
                 return@launch
             }

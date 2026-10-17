@@ -278,4 +278,13 @@
     <string name="sticky_mode_enforced_desc">Persistent Boot: Locked ON for physical slot dual boot to prevent bootloops on reboot</string>
     <string name="sticky_mode_enabled_desc">Persistent Boot: Secondary OS stays active across reboots until you switch back</string>
     <string name="sticky_mode_disabled_desc">One-Shot Boot: Automatically returns to Primary OS on reboot or power off</string>
+    <string name="unrooted_guest_os_title">Secondary OS Active • Unrooted</string>
+    <string name="unrooted_guest_os_desc">This Guest OS is unrooted. Direct slot switching requires root or fastboot. To safely return to your primary OS without getting stuck at the MI logo, run the fastboot commands below:</string>
+    <string name="fastboot_instructions_title">Return to Primary OS (Fastboot)</string>
+    <string name="fastboot_instructions_step1">1. Turn off tablet or hold Power + Vol Down to enter Fastboot.</string>
+    <string name="fastboot_instructions_step2">2. Connect to PC and run the following commands in terminal:</string>
+    <string name="fastboot_commands">fastboot reboot fastboot\nfastboot gsi disable\nfastboot --set-active=a\nfastboot reboot</string>
+    <string name="copy_commands">Copy Commands</string>
+    <string name="commands_copied">Commands copied to clipboard</string>
+    <string name="fastboot_guide">Fastboot Guide</string>
 </resources>

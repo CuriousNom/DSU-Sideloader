@@ -34,6 +34,7 @@ import curiousnom.dsusideloader.ui.screen.Destinations
 import curiousnom.dsusideloader.ui.sdialogs.CancelSheet
 import curiousnom.dsusideloader.ui.sdialogs.ConfirmInstallationSheet
 import curiousnom.dsusideloader.ui.sdialogs.DiscardDSUSheet
+import curiousnom.dsusideloader.ui.sdialogs.FastbootInstructionsSheet
 import curiousnom.dsusideloader.ui.sdialogs.ImageSizeWarningSheet
 import curiousnom.dsusideloader.ui.sdialogs.ViewLogsBottomSheet
 import curiousnom.dsusideloader.ui.util.KeepScreenOn
@@ -129,6 +130,7 @@ fun Home(
                     isDsuInstalled = uiState.isDsuInstalled,
                     isStickyDsu = uiState.isStickyDsu,
                     isStickyEnforced = uiState.isStickyEnforced,
+                    isRoot = uiState.isRoot,
                     onToggleStickyDsu = { homeViewModel.toggleStickyDsu(it) },
                     onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
                     onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
@@ -204,6 +206,11 @@ fun Home(
             ViewLogsBottomSheet(
                 logs = uiState.installationLogs,
                 onClickSaveLogs = { homeViewModel.saveLogs(it) },
+                onDismiss = { homeViewModel.dismissSheet() },
+            )
+
+        SheetDisplayState.FASTBOOT_INSTRUCTIONS ->
+            FastbootInstructionsSheet(
                 onDismiss = { homeViewModel.dismissSheet() },
             )
 

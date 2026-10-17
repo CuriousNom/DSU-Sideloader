@@ -33,6 +33,10 @@ class RebootToPrimaryReceiver : BroadcastReceiver() {
                         Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
                     } else {
                         Log.e(TAG, "Cannot reboot to primary OS: slot switch failed (root required)")
+                        val openAppIntent = Intent(context, curiousnom.dsusideloader.MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        }
+                        context.startActivity(openAppIntent)
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error rebooting to primary slot: ${e.message}", e)
