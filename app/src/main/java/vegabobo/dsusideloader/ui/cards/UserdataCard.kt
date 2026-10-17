@@ -3,9 +3,17 @@ package vegabobo.dsusideloader.ui.cards
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +27,7 @@ import vegabobo.dsusideloader.ui.components.CardBox
 import vegabobo.dsusideloader.ui.components.FileSelectionBox
 import vegabobo.dsusideloader.ui.screen.home.UserDataCardState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserdataCard(
     isEnabled: Boolean,
@@ -41,6 +50,37 @@ fun UserdataCard(
             exit = shrinkVertically(),
         ) {
             Column {
+                val presets = listOf(8, 16, 32, 64).filter {
+                    uiState.maximumAllowed == 0 || it <= uiState.maximumAllowed
+                }
+                if (presets.isNotEmpty() || uiState.maximumAllowed > 0) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        presets.forEach { gb ->
+                            FilterChip(
+                                selected = uiState.text == gb.toString(),
+                                onClick = { onValueChange(gb.toString()) },
+                                label = { Text("$gb GB", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(10.dp),
+                                enabled = !isEnabled,
+                            )
+                        }
+                        if (uiState.maximumAllowed > 0 && !presets.contains(uiState.maximumAllowed)) {
+                            FilterChip(
+                                selected = uiState.text == uiState.maximumAllowed.toString(),
+                                onClick = { onValueChange(uiState.maximumAllowed.toString()) },
+                                label = { Text("Max (${uiState.maximumAllowed} GB)", fontSize = 12.sp) },
+                                shape = RoundedCornerShape(10.dp),
+                                enabled = !isEnabled,
+                            )
+                        }
+                    }
+                }
                 FileSelectionBox(
                     modifier = Modifier.padding(bottom = 4.dp),
                     isEnabled = !isEnabled,
