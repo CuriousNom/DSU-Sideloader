@@ -188,7 +188,7 @@ fun InstallationCardStep(
             )
         InstallationStep.ERROR_CREATE_PARTITION ->
             ProgressableCardContent(
-                text = stringResource(R.string.failed_create_partition),
+                text = stringResource(R.string.failed_create_partition, uiState.errorText.ifEmpty { "partition" }),
                 textSecondButton = stringResource(id = R.string.mreturn),
                 onClickSecondButton = onClickClear,
             )

@@ -69,7 +69,9 @@ class DSUInstaller(
         "recovery",
         "dtbo",
         "userdata",
+        "super",
         "super_empty",
+        "unsparse_super_empty",
         "system_other",
         "scratch",
         "metadata",
@@ -77,11 +79,23 @@ class DSUInstaller(
         "persist",
         "modem",
         "radio",
+        "bluetooth",
+        "dsp",
+        "firmware",
+        "abl",
+        "xbl",
+        "tz",
+        "hyp",
+        "devcfg",
+        "keymaster",
+        "cmnlib",
+        "splash",
+        "logo",
     )
 
     private fun isPartitionSupported(partitionName: String): Boolean {
         val name = partitionName.lowercase()
-        if (name.startsWith("vbmeta")) {
+        if (name.startsWith("vbmeta") || name.contains("super") || name.contains("unsparse")) {
             return false
         }
         return !UNSUPPORTED_PARTITIONS.contains(name)
