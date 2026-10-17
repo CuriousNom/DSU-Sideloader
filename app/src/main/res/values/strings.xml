@@ -276,5 +276,5 @@
     <string name="sticky_mode_title">Persistent Boot (Sticky Mode)</string>
     <string name="sticky_mode_desc">Keep secondary OS active across reboots until manually switched</string>
     <string name="sticky_mode_enabled_desc">Persistent Boot: Secondary OS stays active across reboots until you switch back</string>
-    <string name="sticky_mode_disabled_desc">One-Shot Boot: Automatically returns to Primary OS (MIUI) on reboot or power off</string>
+    <string name="sticky_mode_disabled_desc">One-Shot Boot: Automatically returns to Primary OS on reboot or power off</string>
 </resources>

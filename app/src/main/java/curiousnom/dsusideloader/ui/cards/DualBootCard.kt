@@ -41,7 +41,7 @@ fun DualBootCard(
     val activeSlot = DevicePropUtils.getActiveSlot()
     val kernel = DevicePropUtils.getKernelVersion()
     val pageSize = DevicePropUtils.getKernelPageSizeFormatted()
-    val androidVersion = DevicePropUtils.getAndroidRelease()
+    val osDisplay = DevicePropUtils.getOsDisplay()
     val deviceModel = DevicePropUtils.getDeviceModel()
 
     CardBox(
@@ -69,6 +69,14 @@ fun DualBootCard(
                 ) {
                     SpecBadge("Kernel $kernel")
                     SpecBadge(pageSize)
+                }
+                if (osDisplay.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        SpecBadge(osDisplay)
+                    }
                 }
             }
 
@@ -202,7 +210,7 @@ fun DualBootCard(
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text(
-                                text = stringResource(R.string.active_primary_os, androidVersion),
+                                text = stringResource(R.string.active_primary_os, osDisplay),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
