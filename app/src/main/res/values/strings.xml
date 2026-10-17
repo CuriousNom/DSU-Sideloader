@@ -275,4 +275,5 @@
     <string name="boot_to_secondary_os">Boot Secondary OS</string>
     <string name="sticky_mode_title">Persistent Boot (Sticky Mode)</string>
     <string name="sticky_mode_desc">Keep secondary OS active across reboots until manually switched</string>
+    <string name="sticky_mode_dual_boot_locked">Required for Dual Booting to keep secondary OS active until switched back</string>
 </resources>

@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import curiousnom.dsusideloader.R
+import curiousnom.dsusideloader.core.SlotPartitionManager
 import curiousnom.dsusideloader.ui.components.CardBox
 import curiousnom.dsusideloader.ui.components.buttons.PrimaryButton
 import curiousnom.dsusideloader.ui.components.buttons.SecondaryButton
@@ -140,6 +141,7 @@ fun DualBootCard(
                     }
 
                     // Sticky mode toggle row
+                    val isDualBoot = SlotPartitionManager.hasSecondaryPhysicalSlot()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -159,13 +161,18 @@ fun DualBootCard(
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = stringResource(R.string.sticky_mode_desc),
+                                text = if (isDualBoot) {
+                                    stringResource(R.string.sticky_mode_dual_boot_locked)
+                                } else {
+                                    stringResource(R.string.sticky_mode_desc)
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Switch(
-                            checked = isStickyDsu,
+                            checked = if (isDualBoot) true else isStickyDsu,
+                            enabled = !isDualBoot,
                             onCheckedChange = onToggleStickyDsu,
                         )
                     }

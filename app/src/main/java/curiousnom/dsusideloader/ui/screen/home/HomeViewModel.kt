@@ -390,9 +390,9 @@ class HomeViewModel @Inject constructor(
     fun onClickRebootToDynOS() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
-            val isSticky = readBoolPref(AppPrefs.STICKY_DSU, default = true)
             val hasPhysicalSlot = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false) ||
                 SlotPartitionManager.hasSecondaryPhysicalSlot()
+            val isSticky = if (hasPhysicalSlot) true else readBoolPref(AppPrefs.STICKY_DSU, default = true)
             if (hasPhysicalSlot && SlotPartitionManager.isAbDevice()) {
                 val targetSlot = SlotPartitionManager.getSecondarySlotIndex()
                 SlotPartitionManager.setActiveBootSlot(targetSlot)
