@@ -107,17 +107,44 @@ object PayloadManager {
             return uri.path
         }
 
-        // 1. Try resolving via openFileDescriptor (/proc/self/fd/...)
+        // 1. Decode SAF Document URI (e.g. content://com.android.externalstorage.documents/document/primary%3ADownload%2F...)
+        try {
+            val decodedUri = Uri.decode(uri.toString())
+            if (decodedUri.contains("/document/")) {
+                val docPart = decodedUri.substringAfter("/document/")
+                if (docPart.startsWith("primary:")) {
+                    val subPath = docPart.removePrefix("primary:")
+                    val candidate = File("/storage/emulated/0", subPath)
+                    if (candidate.exists()) return candidate.absolutePath
+                    val candidateMedia = File("/data/media/0", subPath)
+                    if (candidateMedia.exists()) return candidateMedia.absolutePath
+                    val candidateSd = File("/sdcard", subPath)
+                    if (candidateSd.exists()) return candidateSd.absolutePath
+                } else if (docPart.startsWith("raw:")) {
+                    val rawPath = docPart.removePrefix("raw:")
+                    if (File(rawPath).exists()) return rawPath
+                } else if (docPart.contains(":")) {
+                    val uuid = docPart.substringBefore(":")
+                    val subPath = docPart.substringAfter(":")
+                    val candidate = File("/storage/$uuid", subPath)
+                    if (candidate.exists()) return candidate.absolutePath
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "SAF decode failed: ${e.message}")
+        }
+
+        // 2. Try resolving via android.system.Os.readlink on proc fd
         try {
             context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-                val link = File("/proc/self/fd/${pfd.fd}").canonicalPath
-                if (File(link).exists()) {
+                val link = android.system.Os.readlink("/proc/self/fd/${pfd.fd}")
+                if (link.isNotEmpty() && !link.startsWith("/proc/") && File(link).exists()) {
                     return link
                 }
             }
         } catch (_: Exception) {}
 
-        // 2. Try FilenameUtils.getFilePath
+        // 3. Try FilenameUtils.getFilePath
         try {
             val path = FilenameUtils.getFilePath(uri, false).removePrefix("file://")
             if (File(path).exists()) {
@@ -125,14 +152,16 @@ object PayloadManager {
             }
         } catch (_: Exception) {}
 
-        // 3. Fallback: match by filename in standard directories
+        // 4. Fallback: match by filename in standard directories
         try {
             val name = FilenameUtils.queryName(context.contentResolver, uri)
             val candidates = listOf(
                 File("/storage/emulated/0/Download", name),
                 File("/sdcard/Download", name),
+                File("/data/media/0/Download", name),
                 File("/storage/emulated/0", name),
                 File("/sdcard", name),
+                File("/data/media/0", name),
             )
             for (c in candidates) {
                 if (c.exists()) return c.absolutePath
@@ -149,7 +178,8 @@ object PayloadManager {
         val dumper = ensurePayloadDumper(context)
         val result = Shell.cmd("'$dumper' -m -l '$targetPath'").exec()
         if (!result.isSuccess) {
-            Log.e(TAG, "payload-dumper-go list failed: ${result.err.joinToString("\n")}")
+            val errorMsg = (result.err + result.out).joinToString("\n")
+            Log.e(TAG, "payload-dumper-go list failed: $errorMsg (code=${result.code})")
             return emptyList()
         }
 
