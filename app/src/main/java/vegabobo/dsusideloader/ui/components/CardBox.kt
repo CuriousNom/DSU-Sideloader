@@ -64,9 +64,13 @@ fun CardBox(
                     ) {
                         CardTitle(modifier.weight(1F), cardTitle = cardTitle)
                         Spacer(modifier = Modifier.padding(4.dp))
+                        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                         Switch(
                             checked = isToggleChecked,
-                            onCheckedChange = onCheckedChange,
+                            onCheckedChange = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                onCheckedChange(it)
+                            },
                             enabled = isToggleEnabled,
                             colors = SwitchDefaults.colors(),
                         )

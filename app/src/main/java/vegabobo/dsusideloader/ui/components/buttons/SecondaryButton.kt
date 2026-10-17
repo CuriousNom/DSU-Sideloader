@@ -7,6 +7,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 
 @Composable
@@ -16,9 +18,13 @@ fun SecondaryButton(
     onClick: () -> Unit,
     isEnabled: Boolean = true,
 ) {
+    val haptic = LocalHapticFeedback.current
     FilledTonalButton(
         modifier = modifier,
-        onClick = onClick,
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
         enabled = isEnabled,
         shape = RoundedCornerShape(100),
         colors = ButtonDefaults.filledTonalButtonColors(
