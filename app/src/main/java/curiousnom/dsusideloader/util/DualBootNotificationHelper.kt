@@ -12,6 +12,7 @@ import com.topjohnwu.superuser.Shell
 import curiousnom.dsusideloader.MainActivity
 import curiousnom.dsusideloader.R
 import curiousnom.dsusideloader.receiver.RebootToPrimaryReceiver
+import curiousnom.dsusideloader.service.PrivilegedProvider
 
 object DualBootNotificationHelper {
 
@@ -19,11 +20,38 @@ object DualBootNotificationHelper {
     private const val CHANNEL_ID = "dual_boot_status"
     private const val NOTIFICATION_ID = 4001
 
-    fun showGuestOsNotification(context: Context) {
-        try {
-            // Grant POST_NOTIFICATIONS via root if available (Android 13+)
-            Shell.cmd("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS 2>/dev/null").exec()
+    fun suppressOfficialDsuNotification() {
+        if (PrivilegedProvider.isConnected()) {
+            try {
+                PrivilegedProvider.getService().forceStopPackage("com.android.dynsystem")
+            } catch (_: Exception) {}
+        }
+        if (OperationModeUtils.isSuAvailable()) {
+            try {
+                Shell.cmd(
+                    "am force-stop com.android.dynsystem 2>/dev/null",
+                    "pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null",
+                ).submit { result ->
+                    Log.d(TAG, "Suppressed official DSU notification (exitCode: ${result.code})")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to suppress official DSU notification: ${e.message}")
+            }
+        }
+    }
 
+    fun showGuestOsNotification(context: Context) {
+        Log.d(TAG, "showGuestOsNotification invoked")
+        if (OperationModeUtils.isSuAvailable()) {
+            try {
+                Shell.cmd("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS 2>/dev/null").submit()
+            } catch (_: Exception) {}
+        }
+
+        // Suppress conflicting official DSU notification in background
+        suppressOfficialDsuNotification()
+
+        try {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

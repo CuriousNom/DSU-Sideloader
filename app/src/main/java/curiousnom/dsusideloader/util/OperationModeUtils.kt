@@ -53,15 +53,44 @@ class OperationModeUtils {
 
     companion object {
 
+        fun isSuAvailable(): Boolean {
+            val paths = listOf(
+                "/system/bin/su",
+                "/system/xbin/su",
+                "/sbin/su",
+                "/system/sd/xbin/su",
+                "/system/bin/failsafe/su",
+                "/data/local/xbin/su",
+                "/data/local/bin/su",
+                "/data/local/su",
+                "/data/adb/ksu/bin/su",
+                "/data/adb/ap/bin/su",
+                "/data/adb/magisk/su",
+            )
+            for (path in paths) {
+                try {
+                    if (java.io.File(path).exists()) return true
+                } catch (_: Exception) {}
+            }
+            val pathEnv = System.getenv("PATH") ?: ""
+            for (dir in pathEnv.split(":")) {
+                try {
+                    if (java.io.File(dir, "su").exists()) return true
+                } catch (_: Exception) {}
+            }
+            return false
+        }
+
         fun getOperationMode(context: Context, checkShizuku: Boolean): OperationMode {
+            val hasSu = isSuAvailable()
             if (isDsuPermissionGranted(context)) {
-                if (Shell.getShell().isRoot) {
+                if (hasSu && Shell.getShell().isRoot) {
                     return OperationMode.SYSTEM_AND_ROOT
                 }
                 return OperationMode.SYSTEM
             }
 
-            if (Shell.getShell().isRoot) {
+            if (hasSu && Shell.getShell().isRoot) {
                 return OperationMode.ROOT
             }
 

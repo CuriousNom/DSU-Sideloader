@@ -122,22 +122,19 @@ class HomeViewModel @Inject constructor(
             updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
             // Suppress dangerous system DSU notification in guest OS and show safe custom Dual Boot notification
             viewModelScope.launch(Dispatchers.IO) {
-                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").submit()
+                DualBootNotificationHelper.suppressOfficialDsuNotification()
                 DualBootNotificationHelper.showGuestOsNotification(application)
             }
         } else {
             DualBootNotificationHelper.dismissNotification(application)
             checkInstalledDsu()
-            if (isRooted) {
-                // Ensure com.android.dynsystem is enabled on host OS
-                viewModelScope.launch(Dispatchers.IO) {
-                    Shell.cmd("pm enable com.android.dynsystem 2>/dev/null").submit()
-                }
-            }
         }
 
         val hasPhysicalSlot = SlotPartitionManager.hasSecondaryPhysicalSlot()
         val isDualBoot = hasPhysicalSlot || SlotPartitionManager.isAbDevice()
+        if (isDualBoot) {
+            DualBootNotificationHelper.suppressOfficialDsuNotification()
+        }
         _uiState.update {
             it.copy(
                 isStickyDsu = if (hasPhysicalSlot) true else it.isStickyDsu,
@@ -154,10 +151,12 @@ class HomeViewModel @Inject constructor(
                 val installed = isInstalled
                 _uiState.update { it.copy(isDsuRunning = inUse, isDsuInstalled = installed) }
                 if (inUse) {
+                    DualBootNotificationHelper.suppressOfficialDsuNotification()
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
                     return@run
                 }
                 if (installed) {
+                    DualBootNotificationHelper.suppressOfficialDsuNotification()
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
                     return@run
                 }
@@ -179,7 +178,7 @@ class HomeViewModel @Inject constructor(
             }
             updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
             viewModelScope.launch(Dispatchers.IO) {
-                Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").submit()
+                DualBootNotificationHelper.suppressOfficialDsuNotification()
                 DualBootNotificationHelper.showGuestOsNotification(application)
             }
             return
@@ -749,11 +748,13 @@ class HomeViewModel @Inject constructor(
     //
 
     private fun onRootInstallationSuccess() {
+        DualBootNotificationHelper.suppressOfficialDsuNotification()
         _uiState.update { it.copy(isDsuInstalled = true) }
         updateInstallationCard { it.copy(installationStep = InstallationStep.INSTALL_SUCCESS_REBOOT_DYN_OS) }
     }
 
     private fun onInstallationSuccess() {
+        DualBootNotificationHelper.suppressOfficialDsuNotification()
         _uiState.update { it.copy(isDsuInstalled = true) }
         updateInstallationCard { it.copy(installationStep = InstallationStep.INSTALL_SUCCESS) }
     }

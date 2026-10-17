@@ -54,9 +54,12 @@ object SlotPartitionManager {
      * Fast in-process check without shell execution or service blocking.
      */
     fun isRunningInDsu(): Boolean {
-        return getCurrentSlotSuffix() == "_b" ||
-            DevicePropUtils.getActiveSlot() == "Slot B" ||
-            DevicePropUtils.isDsuRunning()
+        val slot = DevicePropUtils.getActiveSlot()
+        val prop = DevicePropUtils.isDsuRunning()
+        val suffix = getCurrentSlotSuffix()
+        val result = suffix == "_b" || slot == "Slot B" || prop
+        Log.d(TAG, "isRunningInDsu: suffix=$suffix, slot=$slot, isDsuRunning=$prop -> $result")
+        return result
     }
 
     /**
@@ -296,6 +299,14 @@ object SlotPartitionManager {
             }
             dest.setExecutable(true, false)
             Log.d(TAG, "Extracted bootctl to ${dest.absolutePath}")
+
+            try {
+                val tmpDest = File("/data/local/tmp/bootctl")
+                if (!tmpDest.exists() || tmpDest.length() == 0L) {
+                    dest.copyTo(tmpDest, overwrite = true)
+                    tmpDest.setExecutable(true, false)
+                }
+            } catch (_: Exception) {}
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract bundled bootctl: ${e.message}")
         }

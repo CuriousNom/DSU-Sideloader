@@ -22,6 +22,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
+import curiousnom.dsusideloader.core.SlotPartitionManager
 import curiousnom.dsusideloader.model.Session
 import curiousnom.dsusideloader.preferences.AppPrefs
 import curiousnom.dsusideloader.service.PrivilegedProvider
@@ -30,11 +31,15 @@ import curiousnom.dsusideloader.service.PrivilegedService
 import curiousnom.dsusideloader.service.PrivilegedSystemService
 import curiousnom.dsusideloader.ui.screen.Navigation
 import curiousnom.dsusideloader.ui.theme.DSUHelperTheme
+import curiousnom.dsusideloader.util.DualBootNotificationHelper
 import curiousnom.dsusideloader.util.OperationMode
 import curiousnom.dsusideloader.util.OperationModeUtils
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
@@ -150,7 +155,9 @@ class MainActivity : ComponentActivity(), Shizuku.OnRequestPermissionResultListe
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shell.getShell {}
+        if (OperationModeUtils.isSuAvailable()) {
+            Shell.getShell {}
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
@@ -184,6 +191,32 @@ class MainActivity : ComponentActivity(), Shizuku.OnRequestPermissionResultListe
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1002)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        CoroutineScope(Dispatchers.IO).launch {
+            if (SlotPartitionManager.isRunningInDsu()) {
+                DualBootNotificationHelper.suppressOfficialDsuNotification()
+                DualBootNotificationHelper.showGuestOsNotification(applicationContext)
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1002 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            CoroutineScope(Dispatchers.IO).launch {
+                if (SlotPartitionManager.isRunningInDsu()) {
+                    DualBootNotificationHelper.suppressOfficialDsuNotification()
+                    DualBootNotificationHelper.showGuestOsNotification(applicationContext)
+                }
             }
         }
     }

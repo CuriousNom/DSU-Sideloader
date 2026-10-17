@@ -13,6 +13,7 @@ import curiousnom.dsusideloader.model.ImagePartition
 import curiousnom.dsusideloader.model.Type
 import curiousnom.dsusideloader.preparation.InstallationStep
 import curiousnom.dsusideloader.service.PrivilegedProvider
+import curiousnom.dsusideloader.util.DualBootNotificationHelper
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -450,7 +451,7 @@ class DSUInstaller(
                 onInstallationError(InstallationStep.ERROR_REQUIRES_DISCARD_DSU, "")
                 return
             }
-            forceStopDSU()
+            DualBootNotificationHelper.suppressOfficialDsuNotification()
 
             if (!startInstallation(Constants.DEFAULT_SLOT)) {
                 Log.e(tag, "Failed to initialize DSU slot '${Constants.DEFAULT_SLOT}'")
@@ -521,6 +522,7 @@ class DSUInstaller(
             }
 
             Log.d(tag, "Installation finished successfully.")
+            DualBootNotificationHelper.suppressOfficialDsuNotification()
             onInstallationSuccess()
         } catch (e: Exception) {
             Log.e(tag, "Unhandled error during direct DSU installation: ${e.message}", e)
