@@ -1,6 +1,7 @@
 package vegabobo.dsusideloader.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -30,22 +31,25 @@ fun CardBox(
     addPadding: Boolean = true,
     cardColor: Color = Color.Unspecified,
     onCheckedChange: ((Boolean) -> Unit) = {},
-    roundedCornerShape: RoundedCornerShape = RoundedCornerShape(20.dp),
+    roundedCornerShape: RoundedCornerShape = RoundedCornerShape(24.dp),
     content: @Composable (ColumnScope) -> Unit,
 ) {
     val resolvedColor = if (cardColor != Color.Unspecified) cardColor else MaterialTheme.colorScheme.surfaceContainer
+    val strokeColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
 
     Box(
         modifier = if (addPadding) {
             Modifier
                 .clip(roundedCornerShape)
                 .background(resolvedColor)
+                .border(1.dp, strokeColor, roundedCornerShape)
                 .padding(all = 16.dp)
                 .fillMaxWidth()
         } else {
             Modifier
                 .clip(roundedCornerShape)
                 .background(resolvedColor)
+                .border(1.dp, strokeColor, roundedCornerShape)
                 .fillMaxWidth()
         },
     ) {
