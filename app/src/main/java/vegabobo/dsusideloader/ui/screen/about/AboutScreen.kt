@@ -64,7 +64,7 @@ fun AboutScreen(
     }
 
     ApplicationScreen(
-        modifier = Modifier.padding(start = 10.dp, end = 10.dp),
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp),
         topBar = {
             TopBar(
                 barTitle = stringResource(id = R.string.about),

@@ -96,8 +96,8 @@ fun CustomBottomSheet(
             }
         },
         modifier = modifier.fillMaxSize(),
-        sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        sheetBackgroundColor = MaterialTheme.colorScheme.background,
+        sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        sheetBackgroundColor = MaterialTheme.colorScheme.surface,
     ) {}
 
     // block touch on any part of screen

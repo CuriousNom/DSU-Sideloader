@@ -14,11 +14,12 @@ fun Title(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title,
         fontSize = 14.sp,
-        fontWeight = FontWeight.Medium,
-        color = MaterialTheme.colorScheme.secondary,
+        fontWeight = FontWeight.SemiBold,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
         modifier = modifier
-            .padding(start = 17.dp)
+            .padding(start = 24.dp)
             .padding(bottom = 8.dp)
-            .padding(top = 8.dp),
+            .padding(top = 16.dp),
     )
 }

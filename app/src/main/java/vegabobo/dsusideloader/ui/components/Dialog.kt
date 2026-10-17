@@ -3,7 +3,8 @@ package vegabobo.dsusideloader.ui.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import vegabobo.dsusideloader.ui.theme.surfaceContainerHigh
 
 @Composable
 fun Dialog(
@@ -30,40 +32,64 @@ fun Dialog(
 ) {
     AlertDialog(
         modifier = modifier,
-        icon = { Icon(icon, "icon") },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        title = if (title.isNotEmpty()) {
+            {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
+            null
+        },
+        text = if (text.isNotEmpty()) {
+            {
+                Column {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    content()
+                }
+            }
+        } else {
+            {
+                content()
+            }
+        },
         onDismissRequest = onClickCancel,
         confirmButton = {
             if (confirmText.isNotEmpty()) {
                 TextButton(onClick = onClickConfirm) {
-                    Text(text = confirmText)
+                    Text(
+                        text = confirmText,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
         },
         dismissButton = {
             if (cancelText.isNotEmpty()) {
                 TextButton(onClick = onClickCancel) {
-                    Text(text = cancelText)
-                }
-            }
-        },
-        text = {
-            Column {
-                if (title.isNotEmpty()) {
                     Text(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = title,
+                        text = cancelText,
                         fontWeight = FontWeight.Medium,
-                        style = MaterialTheme.typography.headlineSmall,
-                        textAlign = TextAlign.Center,
                     )
                 }
-                Spacer(modifier = Modifier.padding(8.dp))
-                if (text.isNotEmpty()) {
-                    Text(
-                        text = text,
-                    )
-                }
-                content()
             }
         },
     )

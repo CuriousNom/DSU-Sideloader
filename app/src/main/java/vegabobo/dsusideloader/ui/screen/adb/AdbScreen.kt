@@ -3,6 +3,7 @@ package vegabobo.dsusideloader.ui.screen.adb
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -26,8 +27,8 @@ fun AdbScreen(
     val startInstallationCommand = "sh \"$scriptPath\""
     val startInstallationCommandAdb = "adb shell $startInstallationCommand"
     ApplicationScreen(
-        modifier = Modifier.padding(start = 18.dp, end = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         topBar = {
             TopBar(
                 barTitle = stringResource(id = R.string.installation),
@@ -37,11 +38,23 @@ fun AdbScreen(
             )
         },
         content = {
-            Text(text = stringResource(id = R.string.adb_how_to_adb_shell))
+            Text(
+                text = stringResource(id = R.string.adb_how_to_adb_shell),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             CopyableTextCard(text = startInstallationCommandAdb)
-            Text(text = stringResource(id = R.string.adb_how_to_shell))
+            Text(
+                text = stringResource(id = R.string.adb_how_to_shell),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             CopyableTextCard(text = startInstallationCommand)
-            Text(text = stringResource(id = R.string.adb_how_to_done))
+            Text(
+                text = stringResource(id = R.string.adb_how_to_done),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         },
     )
 }

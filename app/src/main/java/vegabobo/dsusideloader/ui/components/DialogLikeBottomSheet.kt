@@ -51,8 +51,9 @@ fun DialogLikeBottomSheet(
         Text(
             modifier = Modifier.fillMaxWidth(),
             text = text,
-            textAlign = TextAlign.Justify,
-            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Start,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         content()
         Row(modifier = Modifier.padding(top = 16.dp)) {

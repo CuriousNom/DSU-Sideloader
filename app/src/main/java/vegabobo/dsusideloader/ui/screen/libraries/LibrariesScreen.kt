@@ -44,7 +44,7 @@ fun LibrariesScreen(
         columnContent = false,
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection)
-            .padding(start = 10.dp, end = 10.dp),
+            .padding(start = 16.dp, end = 16.dp),
         topBar = {
             TopBar(
                 barTitle = stringResource(id = R.string.libraries_title),

@@ -65,8 +65,8 @@ fun Home(
     }
 
     ApplicationScreen(
-        modifier = Modifier.padding(start = 10.dp, end = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         topBar = {
             TopBar(
                 barTitle = stringResource(id = R.string.app_name),

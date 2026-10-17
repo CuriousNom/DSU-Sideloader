@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import vegabobo.dsusideloader.ui.theme.surfaceContainer
 
 @Composable
 fun CardBox(
@@ -26,42 +28,49 @@ fun CardBox(
     isToggleChecked: Boolean = false,
     isToggleEnabled: Boolean = true,
     addPadding: Boolean = true,
-    cardColor: Color = MaterialTheme.colorScheme.inverseOnSurface,
+    cardColor: Color = Color.Unspecified,
     onCheckedChange: ((Boolean) -> Unit) = {},
-    roundedCornerShape: RoundedCornerShape = RoundedCornerShape(10.dp),
+    roundedCornerShape: RoundedCornerShape = RoundedCornerShape(20.dp),
     content: @Composable (ColumnScope) -> Unit,
 ) {
+    val resolvedColor = if (cardColor != Color.Unspecified) cardColor else MaterialTheme.colorScheme.surfaceContainer
+
     Box(
         modifier = if (addPadding) {
             Modifier
                 .clip(roundedCornerShape)
-                .background(cardColor)
-                .padding(all = 10.dp)
-                .padding(end = 4.dp, start = 4.dp)
+                .background(resolvedColor)
+                .padding(all = 16.dp)
                 .fillMaxWidth()
         } else {
             Modifier
                 .clip(roundedCornerShape)
-                .background(cardColor)
+                .background(resolvedColor)
                 .fillMaxWidth()
         },
     ) {
         Column(modifier = modifier) {
             if (cardTitle.isNotEmpty()) {
                 if (addToggle) {
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         CardTitle(modifier.weight(1F), cardTitle = cardTitle)
                         Spacer(modifier = Modifier.padding(4.dp))
                         Switch(
                             checked = isToggleChecked,
                             onCheckedChange = onCheckedChange,
                             enabled = isToggleEnabled,
+                            colors = SwitchDefaults.colors(),
                         )
                     }
                 } else {
                     CardTitle(
                         cardTitle = cardTitle,
-                        modifier = Modifier.padding(top = 9.5.dp, bottom = 9.5.dp),
+                        modifier = Modifier.padding(bottom = 8.dp),
                     )
                 }
             }

@@ -1,15 +1,22 @@
 package vegabobo.dsusideloader.ui.components
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import vegabobo.dsusideloader.ui.theme.surfaceContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,27 +29,42 @@ fun TopBar(
     onClickBackButton: (() -> Unit)? = null,
 ) {
     LargeTopAppBar(
-        title = { Text(text = barTitle) },
+        title = {
+            Text(
+                text = barTitle,
+                fontWeight = FontWeight.SemiBold,
+            )
+        },
         navigationIcon = {
             if (onClickBackButton != null) {
                 IconButton(onClickBackButton) {
                     Icon(
                         imageVector = Icons.Outlined.ArrowBack,
                         contentDescription = iconContentDescription,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
         },
         actions = {
             if (icon != null) {
-                IconButton(onClickIcon) {
+                IconButton(
+                    onClick = onClickIcon,
+                    modifier = Modifier.padding(end = 8.dp),
+                ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = iconContentDescription,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
         },
+        colors = TopAppBarDefaults.largeTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+        ),
         scrollBehavior = scrollBehavior,
     )
 }
