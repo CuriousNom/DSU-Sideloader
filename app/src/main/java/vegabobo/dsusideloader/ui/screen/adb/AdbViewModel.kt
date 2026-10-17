@@ -11,4 +11,13 @@ class AdbViewModel @Inject constructor(
 ) : ViewModel() {
 
     fun obtainScriptPath(): String = session.installationScriptPath
+
+    fun obtainScriptContent(): String {
+        val path = obtainScriptPath()
+        return try {
+            if (path.isNotEmpty()) java.io.File(path).readText() else ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
 }

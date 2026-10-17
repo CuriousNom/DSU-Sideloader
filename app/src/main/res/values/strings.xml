@@ -226,6 +226,9 @@
     <string name="adb_how_to_done">Once it\'s done, check your notifications to follow installation process, you can also close this app.</string>
 
     <string name="copy_text">Copy text</string>
+    <string name="share_text">Share</string>
+    <string name="share_script_title">Share Installation Script</string>
+    <string name="share_script_description">Export or share the full shell script to execute on a computer or terminal emulator.</string>
     <string name="copied">Copied</string>
 
     <!--

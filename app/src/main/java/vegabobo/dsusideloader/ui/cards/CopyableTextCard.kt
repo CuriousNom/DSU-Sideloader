@@ -1,9 +1,11 @@
 package vegabobo.dsusideloader.ui.cards
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -13,11 +15,13 @@ import androidx.compose.ui.text.AnnotatedString
 import vegabobo.dsusideloader.R
 import vegabobo.dsusideloader.ui.components.SimpleCard
 import vegabobo.dsusideloader.ui.components.buttons.PrimaryButton
+import vegabobo.dsusideloader.ui.components.buttons.SecondaryButton
 
 @Composable
 fun CopyableTextCard(
     text: String,
     showToast: Boolean = true,
+    showShare: Boolean = true,
 ) {
     val context = LocalContext.current
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
@@ -26,7 +30,22 @@ fun CopyableTextCard(
     SimpleCard(
         text = text,
         content = {
-            Row {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (showShare) {
+                    SecondaryButton(
+                        text = stringResource(id = R.string.share_text),
+                        onClick = {
+                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                putExtra(Intent.EXTRA_TEXT, text)
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, null)
+                            context.startActivity(shareIntent)
+                        },
+                    )
+                }
                 Spacer(modifier = Modifier.weight(1F))
                 PrimaryButton(
                     text = stringResource(id = R.string.copy_text),

@@ -18,6 +18,7 @@ import vegabobo.dsusideloader.R
 import vegabobo.dsusideloader.ui.cards.LogcatCard
 import vegabobo.dsusideloader.ui.components.CustomBottomSheet
 import vegabobo.dsusideloader.ui.components.buttons.PrimaryButton
+import vegabobo.dsusideloader.ui.components.buttons.SecondaryButton
 import vegabobo.dsusideloader.ui.util.launcherAcResult
 
 @Composable
@@ -45,6 +46,17 @@ fun ViewLogsBottomSheet(
                 .fillMaxWidth()
                 .padding(top = 8.dp),
         ) {
+            SecondaryButton(
+                text = stringResource(id = R.string.share_text),
+                onClick = {
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        putExtra(Intent.EXTRA_TEXT, logs)
+                        type = "text/plain"
+                    }
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+                },
+            )
             Spacer(modifier = Modifier.weight(1F))
             PrimaryButton(
                 text = stringResource(id = R.string.save_logs),

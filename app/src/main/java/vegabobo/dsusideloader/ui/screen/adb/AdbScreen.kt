@@ -1,19 +1,27 @@
 package vegabobo.dsusideloader.ui.screen.adb
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import vegabobo.dsusideloader.R
 import vegabobo.dsusideloader.ui.cards.CopyableTextCard
 import vegabobo.dsusideloader.ui.components.ApplicationScreen
+import vegabobo.dsusideloader.ui.components.SimpleCard
 import vegabobo.dsusideloader.ui.components.TopBar
+import vegabobo.dsusideloader.ui.components.buttons.PrimaryButton
 import vegabobo.dsusideloader.ui.screen.Destinations
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,7 +30,9 @@ fun AdbScreen(
     navigate: (String) -> Unit,
     adbViewModel: AdbViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val scriptPath = adbViewModel.obtainScriptPath()
+    val scriptContent = adbViewModel.obtainScriptContent()
 
     val startInstallationCommand = "sh \"$scriptPath\""
     val startInstallationCommandAdb = "adb shell $startInstallationCommand"
@@ -50,6 +60,30 @@ fun AdbScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             CopyableTextCard(text = startInstallationCommand)
+            if (scriptContent.isNotEmpty()) {
+                SimpleCard(
+                    cardTitle = stringResource(id = R.string.share_script_title),
+                    text = stringResource(id = R.string.share_script_description),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Spacer(modifier = Modifier.weight(1F))
+                        PrimaryButton(
+                            text = stringResource(id = R.string.share_text),
+                            onClick = {
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    putExtra(Intent.EXTRA_TEXT, scriptContent)
+                                    type = "text/plain"
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, null)
+                                context.startActivity(shareIntent)
+                            },
+                        )
+                    }
+                }
+            }
             Text(
                 text = stringResource(id = R.string.adb_how_to_done),
                 style = MaterialTheme.typography.bodyMedium,
