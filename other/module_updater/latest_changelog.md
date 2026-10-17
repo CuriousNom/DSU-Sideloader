@@ -1,12 +1,10 @@
-### DSU Sideloader v2.03 (8)
+### DSU Sideloader v3.0 (9)
 
-- Always enforce "settings_dynamic_system" flag when possible.
-    - May fix installation stuck for some devices
-- Write installation script to ExternalFilesDir (only adb operation mode)
-- Added developer options, enabled by doing multiple taps in application icon on about section, enables:
-    - Full logcat logging (may help diagnose installation issues)
-    - Disable storage checks (only for testing, not recommended)
-- Added unlocked bootloader warning
-- Other minor fixes and improvements
+- Modernized UI according to Material 3 (Material You) styling.
+- Full dynamic Monet wallpaper-based theming across all screens and components.
+- Brand new adaptive launcher vector icon with dynamic Monet colors and Android 13+ monochrome themed icon layer.
+- Cleaned legacy raster assets and upgraded build toolchain to compileSdk 34 and Java 17/21.
+- Modernized card boxes, pill buttons, preference rows, dialogs, and bottom sheets.
+- Enhanced contrast and edge-to-edge system bar presentation.
 
-Read more at: https://github.com/VegaBobo/DSU-Sideloader/releases/tag/2.03
+Read more at: https://github.com/CuriousNom/DSU-Sideloader/releases/tag/v3.0

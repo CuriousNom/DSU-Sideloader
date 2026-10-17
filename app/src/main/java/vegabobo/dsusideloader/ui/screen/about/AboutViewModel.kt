@@ -23,7 +23,6 @@ import kotlinx.serialization.json.Json
 import vegabobo.dsusideloader.BuildConfig
 import vegabobo.dsusideloader.core.BaseViewModel
 import vegabobo.dsusideloader.preferences.AppPrefs
-import vegabobo.dsusideloader.util.isBuildSignedByAuthor
 
 @Serializable
 data class UpdaterResponse(
@@ -48,8 +47,7 @@ class AboutViewModel @Inject constructor(
     var developerOptionsCounter = 0
 
     init {
-        val isSignedByAuthor = application.isBuildSignedByAuthor()
-        _uiState.update { it.copy(isUpdaterAvailable = isSignedByAuthor || BuildConfig.DEBUG) }
+        _uiState.update { it.copy(isUpdaterAvailable = true) }
     }
 
     fun resetDeveloperOptionsCounter() {
