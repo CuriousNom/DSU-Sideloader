@@ -24,6 +24,7 @@ import curiousnom.dsusideloader.preparation.InstallationStep
 import curiousnom.dsusideloader.preparation.Preparation
 import curiousnom.dsusideloader.service.PrivilegedProvider
 import curiousnom.dsusideloader.util.DevicePropUtils
+import curiousnom.dsusideloader.util.DualBootNotificationHelper
 import curiousnom.dsusideloader.util.FilenameUtils
 import curiousnom.dsusideloader.util.ImageInspector
 import curiousnom.dsusideloader.util.OperationMode
@@ -107,27 +108,31 @@ class HomeViewModel @Inject constructor(
 
         if (isRunningDsu) {
             updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
-            // Suppress dangerous system DSU notification in guest OS so user uses DSU Sideloader safely
+            // Suppress dangerous system DSU notification in guest OS and show safe custom Dual Boot notification
             viewModelScope.launch(Dispatchers.IO) {
                 Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").exec()
+                DualBootNotificationHelper.showGuestOsNotification(application)
             }
-        } else if (session.isRoot()) {
-            PrivilegedProvider.run {
-                val inUse = isInUse
-                val installed = isInstalled
-                _uiState.update { it.copy(isDsuRunning = inUse, isDsuInstalled = installed) }
-                if (inUse) {
-                    updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
-                    return@run
+        } else {
+            DualBootNotificationHelper.dismissNotification(application)
+            if (session.isRoot()) {
+                PrivilegedProvider.run {
+                    val inUse = isInUse
+                    val installed = isInstalled
+                    _uiState.update { it.copy(isDsuRunning = inUse, isDsuInstalled = installed) }
+                    if (inUse) {
+                        updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
+                        return@run
+                    }
+                    if (installed) {
+                        updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
+                        return@run
+                    }
                 }
-                if (installed) {
-                    updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
-                    return@run
+                // Ensure com.android.dynsystem is enabled on host OS
+                viewModelScope.launch(Dispatchers.IO) {
+                    Shell.cmd("pm enable com.android.dynsystem 2>/dev/null").exec()
                 }
-            }
-            // Ensure com.android.dynsystem is enabled on host OS
-            viewModelScope.launch(Dispatchers.IO) {
-                Shell.cmd("pm enable com.android.dynsystem 2>/dev/null").exec()
             }
         }
 
@@ -422,6 +427,7 @@ class HomeViewModel @Inject constructor(
     fun onClickRebootToHostOS() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
+            DualBootNotificationHelper.dismissNotification(application)
             if (SlotPartitionManager.isAbDevice()) {
                 val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
                 SlotPartitionManager.setActiveBootSlot(primarySlot)
@@ -460,6 +466,7 @@ class HomeViewModel @Inject constructor(
     fun onClickDiscardGsi() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
+            DualBootNotificationHelper.dismissNotification(application)
             val isRunningInsideDsu = SlotPartitionManager.isRunningInDsu() || _uiState.value.isDsuRunning || DevicePropUtils.isDsuRunning()
 
             // ALWAYS reset boot slot to Primary (Slot A) BEFORE wiping DSU!

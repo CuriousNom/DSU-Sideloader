@@ -1,0 +1,98 @@
+package curiousnom.dsusideloader.util
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import com.topjohnwu.superuser.Shell
+import curiousnom.dsusideloader.MainActivity
+import curiousnom.dsusideloader.R
+import curiousnom.dsusideloader.receiver.RebootToPrimaryReceiver
+
+object DualBootNotificationHelper {
+
+    private const val TAG = "DualBootNotification"
+    private const val CHANNEL_ID = "dual_boot_status"
+    private const val NOTIFICATION_ID = 4001
+
+    fun showGuestOsNotification(context: Context) {
+        try {
+            // Grant POST_NOTIFICATIONS via root if available (Android 13+)
+            Shell.cmd("pm grant ${context.packageName} android.permission.POST_NOTIFICATIONS 2>/dev/null").exec()
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID,
+                    context.getString(R.string.dual_boot_manager),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = "Status of the dual boot secondary OS"
+                    setShowBadge(false)
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            // Tap notification body: open DSU Sideloader MainActivity
+            val contentIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            val contentPendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                contentIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0),
+            )
+
+            // Action button: Reboot to Primary OS
+            val rebootIntent = Intent(context, RebootToPrimaryReceiver::class.java).apply {
+                action = RebootToPrimaryReceiver.ACTION_REBOOT_TO_PRIMARY
+            }
+            val rebootPendingIntent = PendingIntent.getBroadcast(
+                context,
+                1,
+                rebootIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0),
+            )
+
+            val romName = DevicePropUtils.getRomName()
+            val release = DevicePropUtils.getAndroidRelease()
+            val subtext = if (romName.isNotEmpty()) "$romName ($release)" else release
+
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_qs_dsu)
+                .setContentTitle(context.getString(R.string.active_secondary_os))
+                .setContentText("Running $subtext - Slot B")
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(contentPendingIntent)
+                .addAction(
+                    0,
+                    context.getString(R.string.reboot_to_primary_os),
+                    rebootPendingIntent,
+                )
+                .build()
+
+            notificationManager.notify(NOTIFICATION_ID, notification)
+            Log.d(TAG, "Posted guest OS dual boot notification")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to post guest OS notification: ${e.message}", e)
+        }
+    }
+
+    fun dismissNotification(context: Context) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(NOTIFICATION_ID)
+            Log.d(TAG, "Dismissed guest OS dual boot notification")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to dismiss notification: ${e.message}")
+        }
+    }
+}
