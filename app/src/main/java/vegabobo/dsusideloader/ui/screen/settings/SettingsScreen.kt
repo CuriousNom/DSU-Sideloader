@@ -61,6 +61,7 @@ fun Settings(
                 showToggle = true,
                 isEnabled = uiState.isRoot && !settingsViewModel.isAndroidQ(),
                 isChecked = uiState.preferences[AppPrefs.USE_BUILTIN_INSTALLER]!!,
+                showDivider = true,
                 onClick = {
                     if (!it) {
                         settingsViewModel.updateSheetDisplay(DialogSheetState.BUILT_IN_INSTALLER)
@@ -73,12 +74,14 @@ fun Settings(
                 description = stringResource(id = R.string.unmount_sd_description),
                 showToggle = true,
                 isChecked = uiState.preferences[AppPrefs.UMOUNT_SD]!!,
+                showDivider = true,
                 onClick = { settingsViewModel.togglePreference(AppPrefs.UMOUNT_SD, !it) },
             )
             PreferenceItem(
                 title = stringResource(id = R.string.keep_screen_on),
                 showToggle = true,
                 isChecked = uiState.preferences[AppPrefs.KEEP_SCREEN_ON]!!,
+                showDivider = true,
                 onClick = { settingsViewModel.togglePreference(AppPrefs.KEEP_SCREEN_ON, !it) },
             )
             PreferenceItem(
@@ -98,6 +101,7 @@ fun Settings(
                     description = stringResource(id = R.string.storage_check_description),
                     showToggle = true,
                     isChecked = uiState.preferences[AppPrefs.DISABLE_STORAGE_CHECK]!!,
+                    showDivider = settingsViewModel.getOperationMode() != OperationMode.ADB,
                     onClick = {
                         if (!it) {
                             settingsViewModel.updateSheetDisplay(DialogSheetState.DISABLE_STORAGE_CHECK)
@@ -122,6 +126,7 @@ fun Settings(
             PreferenceItem(
                 title = stringResource(id = R.string.operation_mode),
                 description = settingsViewModel.checkOperationMode(),
+                showDivider = true,
             )
             PreferenceItem(
                 title = stringResource(id = R.string.about),

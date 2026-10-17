@@ -91,6 +91,7 @@ fun AboutScreen(
             PreferenceItem(
                 title = stringResource(id = R.string.github_repo),
                 description = stringResource(id = R.string.github_repo_description),
+                showDivider = true,
                 onClick = { uriHandler.openUri(AboutLinks.REPOSITORY_URL) },
             )
             PreferenceItem(
@@ -124,11 +125,13 @@ fun AboutScreen(
             PreferenceItem(
                 title = "VegaBobo",
                 description = stringResource(id = R.string.role_developer),
+                showDivider = true,
                 onClick = { uriHandler.openUri(AboutLinks.VEGABOBO_GITHUB) },
             )
             PreferenceItem(
                 title = "WSTxda",
                 description = stringResource(id = R.string.role_design_icon),
+                showDivider = true,
                 onClick = { uriHandler.openUri(AboutLinks.WSTXDA_GITHUB) },
             )
             val translators = stringResource(id = R.string.translators_list)
@@ -136,6 +139,7 @@ fun AboutScreen(
                 PreferenceItem(
                     title = stringResource(id = R.string.translators_title),
                     description = stringResource(id = R.string.translators_list),
+                    showDivider = true,
                 )
             }
             PreferenceItem(
