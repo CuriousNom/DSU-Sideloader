@@ -57,6 +57,9 @@ data class HomeUiState(
     val passedInitialChecks: Boolean = false,
     val shouldKeepScreenOn: Boolean = false,
     val is16KbPageSize: Boolean = false,
+    val isDsuRunning: Boolean = false,
+    val isDsuInstalled: Boolean = false,
+    val isStickyDsu: Boolean = true,
 ) {
     fun isInstalling(): Boolean {
         return installationCard.installationStep != InstallationStep.NOT_INSTALLING

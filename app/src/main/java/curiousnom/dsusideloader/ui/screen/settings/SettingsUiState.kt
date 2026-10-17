@@ -15,7 +15,7 @@ data class SettingsUiState(
         AppPrefs.UMOUNT_SD to false,
         AppPrefs.DISABLE_STORAGE_CHECK to false,
         AppPrefs.FULL_LOGCAT_LOGGING to false,
-        AppPrefs.STICKY_DSU to false,
+        AppPrefs.STICKY_DSU to true,
         AppPrefs.HAPTIC_FEEDBACK to true,
     ),
     val dialogSheetDisplay: DialogSheetState = DialogSheetState.NONE,

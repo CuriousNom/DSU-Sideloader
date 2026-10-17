@@ -262,4 +262,17 @@
 
     <string name="close_app">Close app</string>
     <string name="close_app_question">Close app?</string>
+
+    <!-- Dual Boot Manager -->
+    <string name="dual_boot_manager">Dual Boot Manager</string>
+    <string name="active_primary_os">Primary OS: %1$s</string>
+    <string name="active_secondary_os">Secondary OS (DSU) Active</string>
+    <string name="secondary_os_ready">Secondary OS Installed &amp; Ready</string>
+    <string name="secondary_os_running_desc">You are currently running your secondary OS in an isolated sandbox. Your primary OS and personal data remain intact and untouched.</string>
+    <string name="secondary_os_ready_desc">Secondary OS is installed in isolated storage. Switch between operating systems without any risk of data loss.</string>
+    <string name="secondary_os_none_desc">Select a ROM package below to set up your secondary OS for safe testing and dual booting.</string>
+    <string name="reboot_to_primary_os">Reboot to Primary OS</string>
+    <string name="boot_to_secondary_os">Boot Secondary OS</string>
+    <string name="sticky_mode_title">Persistent Boot (Sticky Mode)</string>
+    <string name="sticky_mode_desc">Keep secondary OS active across reboots until manually switched</string>
 </resources>

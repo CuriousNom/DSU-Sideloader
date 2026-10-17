@@ -101,15 +101,21 @@ class HomeViewModel @Inject constructor(
     //
 
     init {
-        // Check if a DSU is already installed
-        // Root-only because MANAGE_DYNAMIC_SYSTEM is required
-        if (session.isRoot()) {
+        val isRunningDsu = DevicePropUtils.isDsuRunning()
+        _uiState.update { it.copy(isDsuRunning = isRunningDsu) }
+
+        if (isRunningDsu) {
+            updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
+        } else if (session.isRoot()) {
             PrivilegedProvider.run {
-                if (isInUse) {
+                val inUse = isInUse
+                val installed = isInstalled
+                _uiState.update { it.copy(isDsuRunning = inUse, isDsuInstalled = installed) }
+                if (inUse) {
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
                     return@run
                 }
-                if (isInstalled) {
+                if (installed) {
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
                     return@run
                 }
@@ -168,10 +174,23 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val shouldKeepScreenOn = readBoolPref(AppPrefs.KEEP_SCREEN_ON)
             Log.d(tag, "shouldKeepScreenOn: $shouldKeepScreenOn")
-            _uiState.update { it.copy(shouldKeepScreenOn = shouldKeepScreenOn) }
+            val isSticky = readBoolPref(AppPrefs.STICKY_DSU, default = true)
+            _uiState.update {
+                it.copy(
+                    shouldKeepScreenOn = shouldKeepScreenOn,
+                    isStickyDsu = isSticky,
+                )
+            }
 
             disabledStorageCheck = readBoolPref(AppPrefs.DISABLE_STORAGE_CHECK)
             Log.d(tag, "disabledStorageCheck: $shouldKeepScreenOn")
+        }
+    }
+
+    fun toggleStickyDsu(enabled: Boolean) {
+        viewModelScope.launch {
+            updateBoolPref(AppPrefs.STICKY_DSU, enabled)
+            _uiState.update { it.copy(isStickyDsu = enabled) }
         }
     }
 
@@ -362,11 +381,30 @@ class HomeViewModel @Inject constructor(
     fun onClickRebootToDynOS() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
-            val isSticky = readBoolPref(AppPrefs.STICKY_DSU)
-            PrivilegedProvider.run {
-                setEnable(true, !isSticky)
-                Shell.cmd("reboot").exec()
+            val isSticky = readBoolPref(AppPrefs.STICKY_DSU, default = true)
+            try {
+                PrivilegedProvider.run {
+                    setEnable(true, !isSticky)
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
             }
+            val flag = if (isSticky) "-s" else "-o"
+            Shell.cmd("gsi_tool enable $flag", "svc power reboot || reboot").exec()
+        }
+    }
+
+    fun onClickRebootToHostOS() {
+        updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                PrivilegedProvider.run {
+                    setEnable(false, false)
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
+            }
+            Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
         }
     }
 
@@ -381,9 +419,17 @@ class HomeViewModel @Inject constructor(
 
     fun onClickDiscardGsi() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
-        PrivilegedProvider.run {
-            remove()
-            forceStopPackage("com.android.dynsystem")
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                PrivilegedProvider.run {
+                    remove()
+                    forceStopPackage("com.android.dynsystem")
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error removing DSU: ${e.message}")
+            }
+            Shell.cmd("gsi_tool wipe").exec()
+            _uiState.update { it.copy(isDsuInstalled = false, isDsuRunning = false) }
             dismissSheet()
             resetInstallationCard()
         }
@@ -558,10 +604,12 @@ class HomeViewModel @Inject constructor(
     //
 
     private fun onRootInstallationSuccess() {
+        _uiState.update { it.copy(isDsuInstalled = true) }
         updateInstallationCard { it.copy(installationStep = InstallationStep.INSTALL_SUCCESS_REBOOT_DYN_OS) }
     }
 
     private fun onInstallationSuccess() {
+        _uiState.update { it.copy(isDsuInstalled = true) }
         updateInstallationCard { it.copy(installationStep = InstallationStep.INSTALL_SUCCESS) }
     }
 

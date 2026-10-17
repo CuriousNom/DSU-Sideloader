@@ -45,6 +45,34 @@ class DevicePropUtils {
             return getSystemProperty("ro.gsid.image_installed") == "1"
         }
 
+        fun getActiveSlot(): String {
+            val suffix = getSystemProperty("ro.boot.slot_suffix")
+            return when (suffix) {
+                "_a" -> "Slot A"
+                "_b" -> "Slot B"
+                else -> if (suffix.isNotEmpty()) "Slot $suffix" else "Slot A"
+            }
+        }
+
+        fun getKernelVersion(): String {
+            return try {
+                val full = System.getProperty("os.version") ?: ""
+                full.split("-").firstOrNull() ?: full.ifEmpty { "Linux" }
+            } catch (e: Exception) {
+                "Linux"
+            }
+        }
+
+        fun getAndroidRelease(): String {
+            return "Android ${android.os.Build.VERSION.RELEASE}"
+        }
+
+        fun getDeviceModel(): String {
+            val manufacturer = android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+            val model = android.os.Build.MODEL
+            return if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
+        }
+
         private fun getSystemProperty(key: String): String {
             val systemPropertiesClass = Class.forName("android.os.SystemProperties")
             val value = HiddenApiBypass.invoke(systemPropertiesClass, null, "get", key)

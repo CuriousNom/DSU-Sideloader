@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import curiousnom.dsusideloader.R
 import curiousnom.dsusideloader.ui.cards.DsuInfoCard
+import curiousnom.dsusideloader.ui.cards.DualBootCard
 import curiousnom.dsusideloader.ui.cards.ImageSizeCard
 import curiousnom.dsusideloader.ui.cards.UserdataCard
 import curiousnom.dsusideloader.ui.cards.installation.InstallationCard
@@ -123,6 +124,15 @@ fun Home(
                 }
             }
             if (uiState.passedInitialChecks && uiState.additionalCard == AdditionalCardState.NONE) {
+                DualBootCard(
+                    isDsuRunning = uiState.isDsuRunning,
+                    isDsuInstalled = uiState.isDsuInstalled,
+                    isStickyDsu = uiState.isStickyDsu,
+                    onToggleStickyDsu = { homeViewModel.toggleStickyDsu(it) },
+                    onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
+                    onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
+                    onClickDiscardDsu = { homeViewModel.showDiscardSheet() },
+                )
                 InstallationCard(
                     uiState = uiState.installationCard,
                     onClickInstall = { homeViewModel.onClickInstall() },
@@ -135,6 +145,7 @@ fun Home(
                     onClickDiscardInstalledGsiAndInstall = { homeViewModel.onClickDiscardGsiAndStartInstallation() },
                     onClickDiscardDsu = { homeViewModel.showDiscardSheet() },
                     onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
+                    onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
                     onClickViewLogs = { homeViewModel.showLogsWarning() },
                     onClickViewCommands = { navigate(Destinations.ADBInstallation) },
                     minPercentageOfFreeStorage = homeViewModel.allocPercentageInt.toString(),
