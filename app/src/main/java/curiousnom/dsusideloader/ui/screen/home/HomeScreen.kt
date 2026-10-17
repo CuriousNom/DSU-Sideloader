@@ -10,6 +10,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -57,12 +58,18 @@ fun Home(
     val uriHandler = LocalUriHandler.current
 
     val operationMode by homeViewModel.session.operationMode.collectAsStateWithLifecycle()
-    val modePill = when (operationMode) {
-        curiousnom.dsusideloader.util.OperationMode.SYSTEM_AND_ROOT -> "SYSTEM • ROOT"
-        curiousnom.dsusideloader.util.OperationMode.SYSTEM -> "SYSTEM"
-        curiousnom.dsusideloader.util.OperationMode.ROOT -> "ROOT"
-        curiousnom.dsusideloader.util.OperationMode.SHIZUKU -> "SHIZUKU"
-        curiousnom.dsusideloader.util.OperationMode.ADB -> "ADB"
+    val modePill = remember(operationMode) {
+        when (operationMode) {
+            curiousnom.dsusideloader.util.OperationMode.SYSTEM_AND_ROOT -> "SYSTEM • ROOT"
+            curiousnom.dsusideloader.util.OperationMode.SYSTEM -> "SYSTEM"
+            curiousnom.dsusideloader.util.OperationMode.ROOT -> "ROOT"
+            curiousnom.dsusideloader.util.OperationMode.SHIZUKU -> "SHIZUKU"
+            curiousnom.dsusideloader.util.OperationMode.ADB -> "ADB"
+        }
+    }
+
+    val minPercentageOfFreeStorage = remember(homeViewModel.allocPercentageInt) {
+        homeViewModel.allocPercentageInt.toString()
     }
 
     if (uiState.shouldKeepScreenOn) {
@@ -94,32 +101,32 @@ fun Home(
                     AdditionalCardState.NO_DYNAMIC_PARTITIONS ->
                         UnsupportedCard(
                             onClickClose = { exitProcess(0) },
-                            onClickContinueAnyway = { homeViewModel.overrideDynamicPartitionCheck() },
+                            onClickContinueAnyway = homeViewModel::overrideDynamicPartitionCheck,
                         )
 
                     AdditionalCardState.SETUP_STORAGE ->
-                        SetupStorage { homeViewModel.takeUriPermission(it) }
+                        SetupStorage(homeViewModel::takeUriPermission)
 
                     AdditionalCardState.UNAVAIABLE_STORAGE ->
                         StorageWarningCard(
-                            minPercentageFreeStorage = homeViewModel.allocPercentageInt.toString(),
-                            onClick = { homeViewModel.overrideUnavaiableStorage() },
+                            minPercentageFreeStorage = minPercentageOfFreeStorage,
+                            onClick = homeViewModel::overrideUnavaiableStorage,
                         )
 
                     AdditionalCardState.MISSING_READ_LOGS_PERMISSION ->
                         RequiresLogPermissionCard(
-                            onClickGrant = { homeViewModel.grantReadLogs() },
-                            onClickRefuse = { homeViewModel.refuseReadLogs() },
+                            onClickGrant = homeViewModel::grantReadLogs,
+                            onClickRefuse = homeViewModel::refuseReadLogs,
                         )
 
                     AdditionalCardState.GRANTING_READ_LOGS_PERMISSION ->
                         GrantingPermissionCard()
 
                     AdditionalCardState.BOOTLOADER_UNLOCKED_WARNING ->
-                        UnlockedBootloaderCard { homeViewModel.onClickBootloaderUnlockedWarning() }
+                        UnlockedBootloaderCard(homeViewModel::onClickBootloaderUnlockedWarning)
 
                     AdditionalCardState.PAGE_SIZE_16KB_WARNING ->
-                        PageSizeWarningCard { homeViewModel.onClick16KbWarning() }
+                        PageSizeWarningCard(homeViewModel::onClick16KbWarning)
 
                     AdditionalCardState.NONE -> {}
                 }
@@ -132,41 +139,41 @@ fun Home(
                         isStickyDsu = uiState.isStickyDsu,
                         isStickyEnforced = uiState.isStickyEnforced,
                         isRoot = uiState.isRoot,
-                        onToggleStickyDsu = { homeViewModel.toggleStickyDsu(it) },
-                        onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
-                        onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
-                        onClickDiscardDsu = { homeViewModel.showDiscardSheet() },
+                        onToggleStickyDsu = homeViewModel::toggleStickyDsu,
+                        onClickRebootToDynOS = homeViewModel::onClickRebootToDynOS,
+                        onClickRebootToHostOS = homeViewModel::onClickRebootToHostOS,
+                        onClickDiscardDsu = homeViewModel::showDiscardSheet,
                     )
                 }
                 InstallationCard(
                     uiState = uiState.installationCard,
                     isDualBooting = uiState.isDualBooting,
-                    onClickInstall = { homeViewModel.onClickInstall() },
-                    onClickUnmountSdCardAndRetry = { homeViewModel.onClickUnmountSdCardAndRetry() },
-                    onClickSetSeLinuxPermissive = { homeViewModel.onClickSetSeLinuxPermissive() },
-                    onClickRetryInstallation = { homeViewModel.onClickRetryInstallation() },
-                    onClickClear = { homeViewModel.resetInstallationCard() },
-                    onSelectFileSuccess = { homeViewModel.onFileSelectionResult(it) },
-                    onClickCancelInstallation = { homeViewModel.onClickCancel() },
-                    onClickDiscardInstalledGsiAndInstall = { homeViewModel.onClickDiscardGsiAndStartInstallation() },
-                    onClickDiscardDsu = { homeViewModel.showDiscardSheet() },
-                    onClickRebootToDynOS = { homeViewModel.onClickRebootToDynOS() },
-                    onClickRebootToHostOS = { homeViewModel.onClickRebootToHostOS() },
-                    onClickViewLogs = { homeViewModel.showLogsWarning() },
+                    onClickInstall = homeViewModel::onClickInstall,
+                    onClickUnmountSdCardAndRetry = homeViewModel::onClickUnmountSdCardAndRetry,
+                    onClickSetSeLinuxPermissive = homeViewModel::onClickSetSeLinuxPermissive,
+                    onClickRetryInstallation = homeViewModel::onClickRetryInstallation,
+                    onClickClear = homeViewModel::resetInstallationCard,
+                    onSelectFileSuccess = homeViewModel::onFileSelectionResult,
+                    onClickCancelInstallation = homeViewModel::onClickCancel,
+                    onClickDiscardInstalledGsiAndInstall = homeViewModel::onClickDiscardGsiAndStartInstallation,
+                    onClickDiscardDsu = homeViewModel::showDiscardSheet,
+                    onClickRebootToDynOS = homeViewModel::onClickRebootToDynOS,
+                    onClickRebootToHostOS = homeViewModel::onClickRebootToHostOS,
+                    onClickViewLogs = homeViewModel::showLogsWarning,
                     onClickViewCommands = { navigate(Destinations.ADBInstallation) },
-                    minPercentageOfFreeStorage = homeViewModel.allocPercentageInt.toString(),
+                    minPercentageOfFreeStorage = minPercentageOfFreeStorage,
                 )
                 UserdataCard(
                     isEnabled = uiState.isInstalling(),
                     uiState = uiState.userDataCard,
                     onCheckedChange = { homeViewModel.onCheckUserdataCard() },
-                    onValueChange = { homeViewModel.updateUserdataSize(it) },
+                    onValueChange = homeViewModel::updateUserdataSize,
                 )
                 ImageSizeCard(
                     isEnabled = uiState.isInstalling(),
                     uiState = uiState.imageSizeCard,
                     onCheckedChange = { homeViewModel.onCheckImageSizeCard() },
-                    onValueChange = { homeViewModel.updateImageSize(it) },
+                    onValueChange = homeViewModel::updateImageSize,
                 )
                 DsuInfoCard(
                     onClickViewDocs = { uriHandler.openUri(HomeLinks.DSU_DOCS) },

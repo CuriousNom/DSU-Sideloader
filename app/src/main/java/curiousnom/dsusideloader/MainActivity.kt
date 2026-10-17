@@ -40,6 +40,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
@@ -184,8 +185,12 @@ class MainActivity : ComponentActivity(), Shizuku.OnRequestPermissionResultListe
         }
 
         if (savedInstanceState == null) {
-            setupSessionOperationMode()
-            setupService()
+            CoroutineScope(Dispatchers.IO).launch {
+                setupSessionOperationMode()
+                withContext(Dispatchers.Main) {
+                    setupService()
+                }
+            }
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

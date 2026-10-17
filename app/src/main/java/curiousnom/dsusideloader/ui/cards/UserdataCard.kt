@@ -19,6 +19,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -53,8 +54,10 @@ fun UserdataCard(
             exit = shrinkVertically(),
         ) {
             Column {
-                val presets = listOf(8, 16, 32, 64).filter {
-                    uiState.maximumAllowed == 0 || it <= uiState.maximumAllowed
+                val presets = remember(uiState.maximumAllowed) {
+                    listOf(8, 16, 32, 64).filter {
+                        uiState.maximumAllowed == 0 || it <= uiState.maximumAllowed
+                    }
                 }
                 if (presets.isNotEmpty() || uiState.maximumAllowed > 0) {
                     Row(

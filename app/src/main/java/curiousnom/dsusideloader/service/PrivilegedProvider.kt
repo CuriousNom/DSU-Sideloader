@@ -25,14 +25,13 @@ object PrivilegedProvider {
             }
             var timeout = 0
             while (!isConnected()) {
-                timeout += 1000
+                timeout += 100
                 if (timeout > 20000) {
                     Log.e(tag, "Service unavailable.")
                     onFail()
                     return@launch
                 }
-                delay(1000)
-                Log.d(tag, "Service unavailable, checking again in 1s.. [${timeout / 1000}s/20s]")
+                delay(100)
             }
             Log.d(tag, "IPrivilegedService available, uid: ${service().uid}")
             onConnected(service())
@@ -43,11 +42,11 @@ object PrivilegedProvider {
     fun getService(): IPrivilegedService {
         var timeout = 0
         while (!isConnected()) {
-            timeout += 1000
+            timeout += 100
             if (timeout > 20000) {
                 throw Exception("Service unavailable.")
             }
-            Thread.sleep(1000)
+            Thread.sleep(100)
         }
         return this.connection.SERVICE!!
     }

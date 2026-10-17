@@ -1,6 +1,5 @@
 package curiousnom.dsusideloader.ui.components
 
-import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
@@ -37,9 +37,7 @@ fun ApplicationScreen(
     outsideContent: @Composable (PaddingValues) -> Unit = {},
     content: @Composable () -> Unit = {},
 ) {
-    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        flingAnimationSpec = decayAnimationSpec,
         state = rememberTopAppBarState(),
     )
 
@@ -51,29 +49,36 @@ fun ApplicationScreen(
         .only(WindowInsetsSides.Vertical)
         .asPaddingValues()
 
+    val scrollState = rememberScrollState()
+
     Surface {
         Scaffold(
-            modifier = scrollBehaviorModifier
-                .fillMaxSize(),
+            modifier = scrollBehaviorModifier.fillMaxSize(),
             topBar = { topBar(scrollBehavior) },
             bottomBar = { bottomBar() },
             content = { innerPadding ->
                 val scrollModifier =
-                    if (enableDefaultScrollBehavior) Modifier.verticalScroll(rememberScrollState()) else Modifier
+                    if (enableDefaultScrollBehavior) Modifier.verticalScroll(scrollState) else Modifier
                 if (columnContent) {
                     Column(
-                        modifier = modifier
-                            .padding(top = innerPadding.calculateTopPadding())
-                            .then(scrollModifier),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .then(scrollModifier)
+                            .then(modifier),
                         verticalArrangement = verticalArrangement,
                     ) {
                         content()
-                        Spacer(modifier = Modifier.padding(innerPadding.calculateBottomPadding()))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 } else {
-                    Surface(modifier = modifier.padding(top = innerPadding.calculateTopPadding())) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .then(modifier),
+                    ) {
                         content()
-                        Spacer(modifier = Modifier.padding(innerPadding.calculateBottomPadding()))
                     }
                 }
             },

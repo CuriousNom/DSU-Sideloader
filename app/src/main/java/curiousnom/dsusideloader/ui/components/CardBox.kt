@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import curiousnom.dsusideloader.ui.theme.surfaceContainer
 
+private val DefaultCardShape = RoundedCornerShape(20.dp)
+
 @Composable
 fun CardBox(
     modifier: Modifier = Modifier,
@@ -32,7 +34,7 @@ fun CardBox(
     addPadding: Boolean = true,
     cardColor: Color = Color.Unspecified,
     onCheckedChange: ((Boolean) -> Unit) = {},
-    roundedCornerShape: RoundedCornerShape = RoundedCornerShape(20.dp),
+    roundedCornerShape: RoundedCornerShape = DefaultCardShape,
     content: @Composable (ColumnScope) -> Unit,
 ) {
     val resolvedColor = if (cardColor != Color.Unspecified) cardColor else MaterialTheme.colorScheme.surfaceContainer
@@ -60,7 +62,7 @@ fun CardBox(
                             .padding(bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CardTitle(modifier.weight(1F), cardTitle = cardTitle, icon = cardIcon)
+                        CardTitle(Modifier.weight(1F), cardTitle = cardTitle, icon = cardIcon)
                         Spacer(modifier = Modifier.padding(4.dp))
                         val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                         Switch(

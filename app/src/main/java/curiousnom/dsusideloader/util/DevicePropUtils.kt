@@ -1,10 +1,42 @@
 package curiousnom.dsusideloader.util
 
+import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 class DevicePropUtils {
 
     companion object {
+
+        private val propCache = ConcurrentHashMap<String, String>()
+
+        private val systemPropertiesClass: Class<*>? by lazy {
+            try {
+                Class.forName("android.os.SystemProperties")
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        fun getSystemProperty(key: String, cache: Boolean = true): String {
+            if (!cache) {
+                return try {
+                    val clazz = systemPropertiesClass ?: return ""
+                    val value = HiddenApiBypass.invoke(clazz, null, "get", key)
+                    value?.toString() ?: ""
+                } catch (_: Exception) {
+                    ""
+                }
+            }
+            return propCache.getOrPut(key) {
+                try {
+                    val clazz = systemPropertiesClass ?: return@getOrPut ""
+                    val value = HiddenApiBypass.invoke(clazz, null, "get", key)
+                    value?.toString() ?: ""
+                } catch (_: Exception) {
+                    ""
+                }
+            }
+        }
 
         /**
          * Check if custom gsid binary prop is set, when this prop is set
@@ -14,50 +46,62 @@ class DevicePropUtils {
          * @return Minimum percentage allowed by gsid binary (default is 0.40F)
          * @see :magisk-module
          */
-        fun getGsidBinaryAllowedPerc(): Float {
+        private val cachedGsidBinaryAllowedPerc: Float by lazy {
             val minAllowed = getSystemProperty("ro.curiousnom.dsusideloader.gsid_min_alloc")
                 .ifEmpty { getSystemProperty("ro.vegabobo.dsusideloader.gsid_min_alloc") }
-            return if (minAllowed.isNotEmpty()) minAllowed.toFloat() else 0.40F
+            if (minAllowed.isNotEmpty()) minAllowed.toFloat() else 0.40F
         }
 
-        fun hasDynamicPartitions(): Boolean {
-            return getSystemProperty("ro.boot.dynamic_partitions") == "true"
+        fun getGsidBinaryAllowedPerc(): Float = cachedGsidBinaryAllowedPerc
+
+        private val cachedDynamicPartitions: Boolean by lazy {
+            getSystemProperty("ro.boot.dynamic_partitions") == "true"
         }
 
-        fun getKernelPageSize(): Long {
-            return try {
+        fun hasDynamicPartitions(): Boolean = cachedDynamicPartitions
+
+        private val cachedKernelPageSize: Long by lazy {
+            try {
                 android.system.Os.sysconf(android.system.OsConstants._SC_PAGESIZE)
             } catch (e: Exception) {
                 4096L
             }
         }
 
-        fun is16KbPageSize(): Boolean {
-            return getKernelPageSize() == 16384L
+        fun getKernelPageSize(): Long = cachedKernelPageSize
+
+        private val cachedIs16KbPageSize: Boolean by lazy {
+            cachedKernelPageSize == 16384L
         }
 
-        fun getKernelPageSizeFormatted(): String {
-            val size = getKernelPageSize()
-            return if (size > 0L) "${size / 1024} KB" else "4 KB"
+        fun is16KbPageSize(): Boolean = cachedIs16KbPageSize
+
+        private val cachedKernelPageSizeFormatted: String by lazy {
+            val size = cachedKernelPageSize
+            if (size > 0L) "${size / 1024} KB" else "4 KB"
         }
+
+        fun getKernelPageSizeFormatted(): String = cachedKernelPageSizeFormatted
 
         fun isDsuRunning(): Boolean {
             return getActiveSlot() == "Slot B" ||
                 getSystemProperty("ro.boot.slot_suffix") == "_b" ||
-                getSystemProperty("ro.gsid.image_installed") == "1"
+                getSystemProperty("ro.gsid.image_installed", cache = false) == "1"
         }
 
-        fun getActiveSlot(): String {
+        private val cachedActiveSlot: String by lazy {
             val suffix = getSystemProperty("ro.boot.slot_suffix")
-            return when (suffix) {
+            when (suffix) {
                 "_a" -> "Slot A"
                 "_b" -> "Slot B"
                 else -> if (suffix.isNotEmpty()) "Slot $suffix" else "Slot A"
             }
         }
 
-        fun getKernelVersion(): String {
-            return try {
+        fun getActiveSlot(): String = cachedActiveSlot
+
+        private val cachedKernelVersion: String by lazy {
+            try {
                 val full = System.getProperty("os.version") ?: ""
                 full.split("-").firstOrNull() ?: full.ifEmpty { "Linux" }
             } catch (e: Exception) {
@@ -65,15 +109,23 @@ class DevicePropUtils {
             }
         }
 
+        fun getKernelVersion(): String = cachedKernelVersion
+
         fun getAndroidRelease(): String {
             return "Android ${android.os.Build.VERSION.RELEASE}"
         }
+
+        private val cachedRomName: String by lazy {
+            computeRomName()
+        }
+
+        fun getRomName(): String = cachedRomName
 
         /**
          * Dynamically detects custom ROM flavors and OEM skins from system properties.
          * Returns empty string if no specific ROM skin is detected (pure/generic AOSP).
          */
-        fun getRomName(): String {
+        private fun computeRomName(): String {
             return try {
                 // Xiaomi HyperOS
                 val hyperOsName = getSystemProperty("ro.mi.os.version.name")
@@ -153,34 +205,30 @@ class DevicePropUtils {
             }
         }
 
-        fun getOsDisplay(): String {
+        private val cachedOsDisplay: String by lazy {
             val rom = getRomName()
             val androidVer = "Android ${android.os.Build.VERSION.RELEASE}"
-            return when {
+            when {
                 rom.isNotEmpty() -> "$rom ($androidVer)"
                 else -> androidVer
             }
         }
 
-        fun getDeviceModel(): String {
+        fun getOsDisplay(): String = cachedOsDisplay
+
+        private val cachedDeviceModel: String by lazy {
             val marketName = getSystemProperty("ro.product.marketname")
                 .ifEmpty { getSystemProperty("ro.product.vendor.marketname") }
                 .ifEmpty { getSystemProperty("ro.product.odm.marketname") }
-            if (marketName.isNotEmpty()) return marketName
-
-            val manufacturer = android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
-            val model = android.os.Build.MODEL
-            return if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
-        }
-
-        private fun getSystemProperty(key: String): String {
-            return try {
-                val systemPropertiesClass = Class.forName("android.os.SystemProperties")
-                val value = HiddenApiBypass.invoke(systemPropertiesClass, null, "get", key)
-                value?.toString() ?: ""
-            } catch (e: Exception) {
-                ""
+            if (marketName.isNotEmpty()) {
+                marketName
+            } else {
+                val manufacturer = android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+                val model = android.os.Build.MODEL
+                if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
             }
         }
+
+        fun getDeviceModel(): String = cachedDeviceModel
     }
 }

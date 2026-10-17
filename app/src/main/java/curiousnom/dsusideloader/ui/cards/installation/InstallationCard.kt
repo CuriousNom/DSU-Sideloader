@@ -7,6 +7,8 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.InstallMobile
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -35,26 +37,32 @@ fun InstallationCard(
     onClickViewCommands: () -> Unit,
     isDualBooting: Boolean = true,
 ) {
-    var chooseFile = Intent(Intent.ACTION_OPEN_DOCUMENT)
-    chooseFile.type = "*/*"
-    val mimetypes = arrayOf(
-        "application/gzip",
-        "application/x-gzip",
-        "application/x-xz",
-        "application/zip",
-        "application/octet-stream",
-    )
-    chooseFile.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes)
-    chooseFile = Intent.createChooser(chooseFile, "")
+    val chooseFile = remember {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "*/*"
+            val mimetypes = arrayOf(
+                "application/gzip",
+                "application/x-gzip",
+                "application/x-xz",
+                "application/zip",
+                "application/octet-stream",
+            )
+            putExtra(Intent.EXTRA_MIME_TYPES, mimetypes)
+        }
+        Intent.createChooser(intent, "")
+    }
 
     val launcherSelectFile = launcherAcResult {
         onSelectFileSuccess(it)
     }
 
     val textFieldInteraction = remember { MutableInteractionSource() }
+    val isPressed by textFieldInteraction.collectIsPressedAsState()
 
-    if (textFieldInteraction.collectIsPressedAsState().value) {
-        launcherSelectFile.launch(chooseFile)
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            launcherSelectFile.launch(chooseFile)
+        }
     }
 
     CardBox(
