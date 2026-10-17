@@ -16,9 +16,6 @@ class BootReceiver : BroadcastReceiver() {
             Log.d("BootReceiver", "BOOT_COMPLETED received, checking DSU status...")
             CoroutineScope(Dispatchers.IO).launch {
                 SlotPartitionManager.ensureBootctlExtracted(context)
-                if (SlotPartitionManager.isRunningInDsu()) {
-                    SlotPartitionManager.autoArmPrimarySlotIfOneShot()
-                }
             }
         }
     }

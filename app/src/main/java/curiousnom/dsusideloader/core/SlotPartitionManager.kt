@@ -119,57 +119,6 @@ object SlotPartitionManager {
         }
     }
 
-    fun setDsuStickyFlag(sticky: Boolean) {
-        if (sticky) {
-            Shell.cmd("touch /metadata/dsu_sticky 2>/dev/null").exec()
-            Log.d(TAG, "setDsuStickyFlag: Enabled persistent sticky mode (/metadata/dsu_sticky)")
-        } else {
-            Shell.cmd("rm -f /metadata/dsu_sticky 2>/dev/null").exec()
-            Log.d(TAG, "setDsuStickyFlag: Disabled sticky mode, one-shot auto-return configured")
-        }
-    }
-
-    fun isDsuStickyFlagSet(): Boolean {
-        val check = Shell.cmd("test -f /metadata/dsu_sticky && echo yes").exec()
-        return check.out.contains("yes")
-    }
-
-    /**
-     * When running inside DSU in one-shot mode (sticky flag NOT set):
-     * Pre-arms the hardware active slot back to Primary (Slot A) and disables DSU
-     * so that the NEXT reboot or power-off will automatically return directly to Primary OS.
-     */
-    fun autoArmPrimarySlotIfOneShot(): Boolean {
-        if (!isRunningInDsu()) {
-            return false
-        }
-        val isSticky = isDsuStickyFlagSet()
-        if (isSticky) {
-            Log.d(TAG, "autoArmPrimarySlotIfOneShot: Sticky mode is active, keeping secondary slot")
-            return false
-        }
-
-        Log.d(TAG, "autoArmPrimarySlotIfOneShot: One-shot DSU detected! Pre-arming Primary OS...")
-        val primary = getPrimarySlotIndex()
-        val slotSuccess = setActiveBootSlot(primary)
-        Shell.cmd("gsi_tool disable").exec()
-        Log.d(TAG, "autoArmPrimarySlotIfOneShot: Active slot switched to $primary (success=$slotSuccess)")
-        return slotSuccess
-    }
-
-    fun installStandbyBootScript() {
-        val script = "#!/system/bin/sh\n" +
-            "if [ \"$(getprop ro.gsid.image_installed)\" = \"1\" ] && [ ! -f /metadata/dsu_sticky ]; then\n" +
-            "    /data/local/tmp/bootctl set-active-boot-slot 0 2>/dev/null || /system/bin/bootctl set-active-boot-slot 0 2>/dev/null\n" +
-            "    gsi_tool disable 2>/dev/null\n" +
-            "fi\n"
-        Shell.cmd(
-            "mkdir -p /data/adb/service.d 2>/dev/null",
-            "echo '$script' > /data/adb/service.d/dsu_oneshot_arm.sh",
-            "chmod 755 /data/adb/service.d/dsu_oneshot_arm.sh",
-        ).exec()
-    }
-
     /**
      * Finds the real block device path for a partition on the given slot suffix.
      * Searches standard by-name directories.

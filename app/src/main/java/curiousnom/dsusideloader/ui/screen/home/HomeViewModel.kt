@@ -110,8 +110,6 @@ class HomeViewModel @Inject constructor(
             // Suppress dangerous system DSU notification in guest OS so user uses DSU Sideloader safely
             viewModelScope.launch(Dispatchers.IO) {
                 Shell.cmd("pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null").exec()
-                // If one-shot mode was selected, immediately pre-arm Slot A for next reboot/power-off!
-                SlotPartitionManager.autoArmPrimarySlotIfOneShot()
             }
         } else if (session.isRoot()) {
             PrivilegedProvider.run {
@@ -400,18 +398,13 @@ class HomeViewModel @Inject constructor(
     fun onClickRebootToDynOS() {
         updateInstallationCard { it.copy(installationStep = InstallationStep.PROCESSING) }
         viewModelScope.launch(Dispatchers.IO) {
-            val isSticky = readBoolPref(AppPrefs.STICKY_DSU, default = true)
             val hasPhysicalSlot = readBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, default = false) ||
                 SlotPartitionManager.hasSecondaryPhysicalSlot()
-
-            // Manage the shared /metadata/dsu_sticky flag so guest OS knows whether to auto-arm Slot A
-            SlotPartitionManager.setDsuStickyFlag(isSticky)
-            SlotPartitionManager.installStandbyBootScript()
 
             if (hasPhysicalSlot && SlotPartitionManager.isAbDevice()) {
                 val targetSlot = SlotPartitionManager.getSecondarySlotIndex()
                 SlotPartitionManager.setActiveBootSlot(targetSlot)
-                Log.d(tag, "RebootToDynOS: Switched active slot to $targetSlot (isSticky=$isSticky)")
+                Log.d(tag, "RebootToDynOS: Switched active slot to $targetSlot")
             }
             try {
                 PrivilegedProvider.run {
@@ -420,10 +413,9 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
             }
-            // Always enable with -s so DSU does not drop mid-boot.
-            // If isSticky == false, our autoArmPrimarySlotIfOneShot() hook in the guest OS
-            // will pre-arm Slot A and disable DSU once the system has booted!
-            Shell.cmd("gsi_tool enable -s", "svc power reboot || reboot").exec()
+            // In AOSP gsi_tool, -s stands for --single-boot (one-shot).
+            // Calling 'gsi_tool enable' without -s enables persistent sticky mode across reboots!
+            Shell.cmd("gsi_tool enable", "svc power reboot || reboot").exec()
         }
     }
 
@@ -488,7 +480,6 @@ class HomeViewModel @Inject constructor(
 
             Shell.cmd("gsi_tool wipe").exec()
             SlotPartitionManager.setSecondaryPhysicalSlot(false)
-            SlotPartitionManager.setDsuStickyFlag(false)
             updateBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, false)
             _uiState.update { it.copy(isDsuInstalled = false, isDsuRunning = false) }
 
