@@ -81,6 +81,13 @@ fun Settings(
                 isChecked = uiState.preferences[AppPrefs.KEEP_SCREEN_ON]!!,
                 onClick = { settingsViewModel.togglePreference(AppPrefs.KEEP_SCREEN_ON, !it) },
             )
+            PreferenceItem(
+                title = stringResource(id = R.string.sticky_dsu_title),
+                description = stringResource(id = R.string.sticky_dsu_description),
+                showToggle = true,
+                isChecked = uiState.preferences[AppPrefs.STICKY_DSU] ?: false,
+                onClick = { settingsViewModel.togglePreference(AppPrefs.STICKY_DSU, !it) },
+            )
         }
 
         if (uiState.isDevOptEnabled) {

@@ -157,6 +157,8 @@
     <string name="full_logcat_logging_description">Logs section will capture logs with no filters, may degrade app performance</string>
 
     <string name="keep_screen_on">Keep screen on</string>
+    <string name="sticky_dsu_title">Sticky mode (Persistent boot)</string>
+    <string name="sticky_dsu_description">Keep DSU active across multiple reboots instead of single-boot</string>
 
     <string name="developer_options">Developer options</string>
 
