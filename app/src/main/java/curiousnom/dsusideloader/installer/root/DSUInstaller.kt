@@ -62,43 +62,27 @@ class DSUInstaller(
         }
     }
 
-    private val UNSUPPORTED_PARTITIONS: Set<String> = setOf(
-        "boot",
-        "vendor_boot",
-        "init_boot",
-        "recovery",
-        "dtbo",
-        "userdata",
-        "super",
-        "super_empty",
-        "unsparse_super_empty",
-        "system_other",
-        "scratch",
-        "metadata",
-        "misc",
-        "persist",
-        "modem",
-        "radio",
-        "bluetooth",
-        "dsp",
-        "firmware",
-        "abl",
-        "xbl",
-        "tz",
-        "hyp",
-        "devcfg",
-        "keymaster",
-        "cmnlib",
-        "splash",
-        "logo",
+    private val SUPPORTED_LOGICAL_PARTITIONS: Set<String> = setOf(
+        "system",
+        "system_ext",
+        "product",
+        "vendor",
+        "odm",
+        "system_dlkm",
+        "vendor_dlkm",
+        "odm_dlkm",
+        "cust",
+        "mi_ext",
     )
 
     private fun isPartitionSupported(partitionName: String): Boolean {
         val name = partitionName.lowercase()
-        if (name.startsWith("vbmeta") || name.contains("super") || name.contains("unsparse")) {
+        if (SlotPartitionManager.isPhysicalPartition(name)) {
             return false
         }
-        return !UNSUPPORTED_PARTITIONS.contains(name)
+        return SUPPORTED_LOGICAL_PARTITIONS.contains(name) ||
+            name.startsWith("my_") ||
+            name.endsWith("_dlkm")
     }
 
     private fun getFdDup(sharedMemory: SharedMemory): ParcelFileDescriptor {
