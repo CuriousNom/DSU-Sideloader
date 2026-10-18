@@ -95,7 +95,7 @@ object DualBootNotificationHelper {
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_qs_dsu)
                 .setContentTitle(context.getString(R.string.active_secondary_os))
-                .setContentText("Running $subtext - Slot B")
+                .setContentText("Running $subtext - ${DevicePropUtils.getActiveSlot()}")
                 .setOngoing(true)
                 .setAutoCancel(false)
                 .setPriority(NotificationCompat.PRIORITY_LOW)

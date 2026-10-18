@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import curiousnom.dsusideloader.R
+import curiousnom.dsusideloader.core.SlotPartitionManager
 import curiousnom.dsusideloader.ui.components.CustomBottomSheet
 import curiousnom.dsusideloader.ui.components.buttons.PrimaryButton
 import curiousnom.dsusideloader.ui.components.buttons.SecondaryButton
@@ -35,7 +36,8 @@ fun FastbootInstructionsSheet(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    val commands = stringResource(id = R.string.fastboot_commands)
+    val primarySlotLetter = SlotPartitionManager.getPrimarySlotSuffix().trimStart('_')
+    val commands = stringResource(id = R.string.fastboot_commands, primarySlotLetter)
 
     CustomBottomSheet(
         title = stringResource(id = R.string.fastboot_instructions_title),

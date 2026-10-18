@@ -537,7 +537,7 @@ class HomeViewModel @Inject constructor(
             DualBootNotificationHelper.dismissNotification(application)
             val isRunningInsideDsu = SlotPartitionManager.isRunningInDsu() || _uiState.value.isDsuRunning || DevicePropUtils.isDsuRunning()
 
-            // ALWAYS reset boot slot to Primary (Slot A) BEFORE wiping DSU!
+            // ALWAYS reset boot slot to Primary slot BEFORE wiping DSU!
             if (SlotPartitionManager.isAbDevice()) {
                 val primarySlot = SlotPartitionManager.getPrimarySlotIndex()
                 SlotPartitionManager.setActiveBootSlot(primarySlot)

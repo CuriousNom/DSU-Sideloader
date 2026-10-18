@@ -1,5 +1,7 @@
 package curiousnom.dsusideloader.util
 
+import curiousnom.dsusideloader.service.PrivilegedProvider
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
@@ -83,10 +85,42 @@ class DevicePropUtils {
 
         fun getKernelPageSizeFormatted(): String = cachedKernelPageSizeFormatted
 
+        private fun hasDsuMounts(): Boolean {
+            return try {
+                val mountsFile = File("/proc/mounts")
+                if (!mountsFile.exists() || !mountsFile.canRead()) return false
+                mountsFile.useLines { lines ->
+                    lines.any { line ->
+                        line.contains("/mapper/gsi_") ||
+                            line.contains("/mapper/dsu") ||
+                            line.contains("/gsi_data") ||
+                            line.contains("/dsu_data") ||
+                            line.contains("/dev/block/by-name/gsi_") ||
+                            line.contains("/dev/block/by-name/dsu")
+                    }
+                }
+            } catch (_: Exception) {
+                false
+            }
+        }
+
         fun isDsuRunning(): Boolean {
-            return getActiveSlot() == "Slot B" ||
-                getSystemProperty("ro.boot.slot_suffix") == "_b" ||
-                getSystemProperty("ro.gsid.image_installed", cache = false) == "1"
+            val imageInstalled = getSystemProperty("ro.gsid.image_installed", cache = false)
+            val dsuSlot = getSystemProperty("ro.boot.dsu_slot")
+            if (imageInstalled == "1" || dsuSlot.isNotEmpty()) {
+                return true
+            }
+            if (hasDsuMounts()) {
+                return true
+            }
+            if (PrivilegedProvider.isConnected()) {
+                try {
+                    if (PrivilegedProvider.connection.SERVICE?.isInUse == true) {
+                        return true
+                    }
+                } catch (_: Exception) {}
+            }
+            return false
         }
 
         private val cachedActiveSlot: String by lazy {
@@ -94,7 +128,7 @@ class DevicePropUtils {
             when (suffix) {
                 "_a" -> "Slot A"
                 "_b" -> "Slot B"
-                else -> if (suffix.isNotEmpty()) "Slot $suffix" else "Slot A"
+                else -> if (suffix.isNotEmpty()) "Slot ${suffix.trimStart('_').uppercase()}" else "Slot A"
             }
         }
 

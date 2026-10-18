@@ -36,13 +36,18 @@ object SlotPartitionManager {
     }
 
     fun isAbDevice(): Boolean {
-        val slot = DevicePropUtils.getActiveSlot()
-        return slot.startsWith("Slot ")
+        val suffix = DevicePropUtils.getSystemProperty("ro.boot.slot_suffix")
+        val abUpdate = DevicePropUtils.getSystemProperty("ro.build.ab_update")
+        return suffix.isNotEmpty() || abUpdate == "true"
     }
 
     fun getCurrentSlotSuffix(): String {
-        val slot = DevicePropUtils.getActiveSlot()
-        return if (slot == "Slot B") "_b" else "_a"
+        val suffix = DevicePropUtils.getSystemProperty("ro.boot.slot_suffix")
+        return when (suffix) {
+            "_a" -> "_a"
+            "_b" -> "_b"
+            else -> if (suffix.isNotEmpty()) suffix else "_a"
+        }
     }
 
     fun getCurrentSlotIndex(): Int {
@@ -54,12 +59,37 @@ object SlotPartitionManager {
      * Fast in-process check without shell execution or service blocking.
      */
     fun isRunningInDsu(): Boolean {
-        val slot = DevicePropUtils.getActiveSlot()
         val prop = DevicePropUtils.isDsuRunning()
-        val suffix = getCurrentSlotSuffix()
-        val result = suffix == "_b" || slot == "Slot B" || prop
-        Log.d(TAG, "isRunningInDsu: suffix=$suffix, slot=$slot, isDsuRunning=$prop -> $result")
-        return result
+        Log.d(TAG, "isRunningInDsu: isDsuRunning=$prop")
+        return prop
+    }
+
+    fun getRecordedPrimarySlot(): Int? {
+        val candidates = listOf(
+            "/metadata/gsi/dsu_primary_slot",
+            "/data/local/tmp/.dsu_dualboot_active",
+        )
+        for (path in candidates) {
+            try {
+                val file = File(path)
+                if (file.exists() && file.canRead()) {
+                    val text = file.readText().trim()
+                    val idx = text.substringAfter("primary_slot=").trim().toIntOrNull()
+                    if (idx != null) return idx
+                }
+            } catch (_: Exception) {}
+        }
+        if (Shell.isAppGrantedRoot() == true) {
+            try {
+                val res = Shell.cmd("cat /metadata/gsi/dsu_primary_slot 2>/dev/null || cat /data/local/tmp/.dsu_dualboot_active 2>/dev/null").exec()
+                val text = res.out.firstOrNull()?.trim()
+                if (!text.isNullOrEmpty()) {
+                    val idx = text.substringAfter("primary_slot=").trim().toIntOrNull()
+                    if (idx != null) return idx
+                }
+            } catch (_: Exception) {}
+        }
+        return null
     }
 
     /**
@@ -68,6 +98,10 @@ object SlotPartitionManager {
      * When running inside DSU (guest OS), the host OS is the other slot.
      */
     fun getPrimarySlotIndex(): Int {
+        val recorded = getRecordedPrimarySlot()
+        if (recorded != null) {
+            return recorded
+        }
         val current = getCurrentSlotIndex()
         return if (isRunningInDsu()) 1 - current else current
     }
@@ -78,12 +112,11 @@ object SlotPartitionManager {
 
     /**
      * Returns the slot index of the Secondary (Guest/DSU) OS.
-     * When running the host OS, the secondary slot is the other slot.
-     * When running inside DSU, the secondary slot is the current slot.
+     * Always the opposite slot of the primary OS.
      */
     fun getSecondarySlotIndex(): Int {
-        val current = getCurrentSlotIndex()
-        return if (isRunningInDsu()) current else 1 - current
+        val primary = getPrimarySlotIndex()
+        return 1 - primary
     }
 
     fun getSecondarySlotSuffix(): String {
@@ -103,10 +136,16 @@ object SlotPartitionManager {
     fun hasSecondaryPhysicalSlot(): Boolean {
         if (hasFlashedPhysicalSlot) return true
         cachedDualBootActive?.let { return it }
-        val exists = try {
-            File("/data/local/tmp/.dsu_dualboot_active").exists()
+        val marker1 = File("/data/local/tmp/.dsu_dualboot_active")
+        val marker2 = File("/metadata/gsi/dsu_primary_slot")
+        var exists = try {
+            marker1.exists() || marker2.exists()
         } catch (_: Exception) {
             false
+        }
+        if (!exists && Shell.isAppGrantedRoot() == true) {
+            val res = Shell.cmd("test -f /data/local/tmp/.dsu_dualboot_active -o -f /metadata/gsi/dsu_primary_slot && echo 1").exec()
+            exists = res.out.contains("1")
         }
         cachedDualBootActive = exists
         return exists
@@ -116,9 +155,16 @@ object SlotPartitionManager {
         hasFlashedPhysicalSlot = active
         cachedDualBootActive = active
         if (active) {
-            Shell.cmd("touch /data/local/tmp/.dsu_dualboot_active").submit()
+            val primarySlot = getCurrentSlotIndex()
+            Shell.cmd(
+                "echo 'primary_slot=$primarySlot' > /data/local/tmp/.dsu_dualboot_active",
+                "echo 'primary_slot=$primarySlot' > /metadata/gsi/dsu_primary_slot 2>/dev/null || true",
+            ).submit()
         } else {
-            Shell.cmd("rm -f /data/local/tmp/.dsu_dualboot_active").submit()
+            Shell.cmd(
+                "rm -f /data/local/tmp/.dsu_dualboot_active",
+                "rm -f /metadata/gsi/dsu_primary_slot",
+            ).submit()
         }
     }
 

@@ -24,4 +24,5 @@ object AppPrefs {
     const val SEEN_16KB_PAGE_SIZE_WARNING = "seen_16kb_page_size_warning"
     const val HAPTIC_FEEDBACK = "haptic_feedback"
     const val FLASHED_SECONDARY_BOOT_SLOT = "flashed_secondary_boot_slot"
+    const val PRIMARY_BOOT_SLOT = "primary_boot_slot"
 }
