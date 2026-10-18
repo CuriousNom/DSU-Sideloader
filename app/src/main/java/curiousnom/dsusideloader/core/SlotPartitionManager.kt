@@ -225,6 +225,73 @@ object SlotPartitionManager {
         return bytes
     }
 
+    const val BACKUP_DIR_PATH = "/sdcard/DSU_Backup"
+
+    fun backupSecondaryPartition(
+        partitionName: String,
+        targetSlotSuffix: String = getTargetSlotSuffix(),
+    ): Boolean {
+        val blockDev = findBlockDevice(partitionName, targetSlotSuffix) ?: return false
+        val backupFile = "$BACKUP_DIR_PATH/${partitionName}$targetSlotSuffix.img"
+        try {
+            val existsCheck = Shell.cmd("test -f '$backupFile' && echo exists").exec()
+            if (existsCheck.out.contains("exists")) {
+                Log.d(TAG, "Backup for $partitionName$targetSlotSuffix already exists at $backupFile")
+                return true
+            }
+            Log.d(TAG, "Backing up original $partitionName$targetSlotSuffix from $blockDev to $backupFile...")
+            val result = Shell.cmd(
+                "mkdir -p '$BACKUP_DIR_PATH'",
+                "dd if='$blockDev' of='$backupFile' bs=4M",
+            ).exec()
+            val ok = result.isSuccess
+            Log.d(TAG, "Backup $partitionName$targetSlotSuffix result: $ok (exitCode=${result.code})")
+            return ok
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to backup $partitionName$targetSlotSuffix: ${e.message}")
+            return false
+        }
+    }
+
+    fun hasSecondaryBackup(targetSlotSuffix: String = getTargetSlotSuffix()): Boolean {
+        return try {
+            val res = Shell.cmd("ls '$BACKUP_DIR_PATH'/*$targetSlotSuffix.img 2>/dev/null").exec()
+            res.isSuccess && res.out.any { it.trim().endsWith(".img") }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun restoreSecondaryPartitions(targetSlotSuffix: String = getTargetSlotSuffix()): Boolean {
+        try {
+            val list = Shell.cmd("ls '$BACKUP_DIR_PATH'/*$targetSlotSuffix.img 2>/dev/null").exec()
+            if (!list.isSuccess || list.out.isEmpty()) {
+                Log.d(TAG, "No backup files found in $BACKUP_DIR_PATH to restore")
+                return false
+            }
+            var allOk = true
+            for (filePath in list.out) {
+                val path = filePath.trim()
+                if (!path.endsWith(".img")) continue
+                val fileName = path.substringAfterLast("/")
+                val partitionName = fileName.removeSuffix(".img").removeSuffix(targetSlotSuffix)
+                val blockDev = findBlockDevice(partitionName, targetSlotSuffix)
+                if (blockDev != null) {
+                    Log.d(TAG, "Restoring original partition $partitionName from $path to $blockDev...")
+                    val res = Shell.cmd("dd if='$path' of='$blockDev' bs=4M").exec()
+                    if (!res.isSuccess) {
+                        Log.e(TAG, "Failed to restore $partitionName to $blockDev")
+                        allOk = false
+                    }
+                }
+            }
+            return allOk
+        } catch (e: Exception) {
+            Log.e(TAG, "Error restoring secondary partitions: ${e.message}", e)
+            return false
+        }
+    }
+
     /**
      * Flashes an image file of a physical partition directly to the target inactive slot.
      */
@@ -238,6 +305,9 @@ object SlotPartitionManager {
             Log.e(TAG, "Could not find block device for $partitionName$targetSlotSuffix")
             return false
         }
+
+        // Backup existing physical partition before overwriting
+        backupSecondaryPartition(partitionName, targetSlotSuffix)
 
         try {
             if (partitionName.lowercase().startsWith("vbmeta") && imageFile.length() >= 124) {
@@ -273,6 +343,9 @@ object SlotPartitionManager {
             Log.e(TAG, "Could not find block device for $partitionName$targetSlotSuffix")
             return false
         }
+
+        // Backup existing physical partition before overwriting
+        backupSecondaryPartition(partitionName, targetSlotSuffix)
 
         val tempDir = cacheDir ?: File("/data/local/tmp")
         if (!tempDir.exists()) {

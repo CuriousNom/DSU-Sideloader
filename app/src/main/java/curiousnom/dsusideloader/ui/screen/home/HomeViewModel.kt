@@ -554,6 +554,11 @@ class HomeViewModel @Inject constructor(
             }
 
             Shell.cmd("gsi_tool wipe").exec()
+            val secondarySlot = SlotPartitionManager.getSecondarySlotSuffix()
+            if (SlotPartitionManager.hasSecondaryBackup(secondarySlot)) {
+                Log.d(tag, "Discard: Restoring original secondary slot partitions from backup...")
+                SlotPartitionManager.restoreSecondaryPartitions(secondarySlot)
+            }
             SlotPartitionManager.setSecondaryPhysicalSlot(false)
             updateBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, false)
             _uiState.update { it.copy(isDsuInstalled = false, isDsuRunning = false) }
