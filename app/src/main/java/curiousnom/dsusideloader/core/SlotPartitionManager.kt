@@ -31,8 +31,33 @@ object SlotPartitionManager {
         "recovery",
     )
 
+    val LOGICAL_PARTITIONS = setOf(
+        "system",
+        "system_ext",
+        "product",
+        "vendor",
+        "odm",
+        "system_dlkm",
+        "vendor_dlkm",
+        "odm_dlkm",
+        "cust",
+        "mi_ext",
+    )
+
     fun isPhysicalPartition(partitionName: String): Boolean {
         return PHYSICAL_PARTITIONS.contains(partitionName.lowercase())
+    }
+
+    fun isLogicalPartition(partitionName: String): Boolean {
+        val name = partitionName.lowercase()
+        if (isPhysicalPartition(name)) return false
+        return LOGICAL_PARTITIONS.contains(name) ||
+            name.startsWith("my_") ||
+            name.endsWith("_dlkm")
+    }
+
+    fun isSupportedPartition(partitionName: String): Boolean {
+        return isPhysicalPartition(partitionName) || isLogicalPartition(partitionName)
     }
 
     fun isAbDevice(): Boolean {

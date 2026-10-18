@@ -18,7 +18,18 @@ object PayloadManager {
     data class PayloadPartition(
         val name: String,
         val sizeInKb: Long,
-    )
+    ) {
+        fun getFormattedSize(): String {
+            val mb = sizeInKb / 1024.0
+            return if (mb >= 1024.0) {
+                String.format(java.util.Locale.US, "%.1f GB", mb / 1024.0)
+            } else {
+                String.format(java.util.Locale.US, "%.0f MB", mb)
+            }
+        }
+
+        fun isPhysical(): Boolean = SlotPartitionManager.isPhysicalPartition(name)
+    }
 
     /**
      * Extracts bundled payload-dumper-go to /data/local/tmp and sets executable permissions.

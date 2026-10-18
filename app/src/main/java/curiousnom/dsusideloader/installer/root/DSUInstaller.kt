@@ -42,6 +42,7 @@ class DSUInstaller(
     private val userdataSize: Long,
     private val dsuInstallation: DSUInstallationSource,
     private var installationJob: Job = Job(),
+    private val selectedPayloadPartitions: Set<String>? = null,
     private val onInstallationError: (error: InstallationStep, errorInfo: String) -> Unit,
     private val onInstallationProgressUpdate: (progress: Float, partition: String) -> Unit,
     private val onCreatePartition: (partition: String) -> Unit,
@@ -343,10 +344,12 @@ class DSUInstaller(
             if (workspaceDir.exists()) workspaceDir.deleteRecursively()
             workspaceDir.mkdirs()
 
+            val userSelected = selectedPayloadPartitions
+
             // 1. Physical boot/kernel partitions to flash to secondary slot
             val physicalToFlash = partitions
                 .map { it.name }
-                .filter { SlotPartitionManager.isPhysicalPartition(it) }
+                .filter { SlotPartitionManager.isPhysicalPartition(it) && (userSelected == null || userSelected.contains(it)) }
 
             if (physicalToFlash.isNotEmpty()) {
                 val targetSlotName = "Slot ${SlotPartitionManager.getTargetSlotSuffix().trimStart('_').uppercase()}"
@@ -390,7 +393,7 @@ class DSUInstaller(
             // 2. Logical dynamic partitions to install into DSU
             val logicalToInstall = partitions
                 .map { it.name }
-                .filter { isPartitionSupported(it) }
+                .filter { isPartitionSupported(it) && (userSelected == null || userSelected.contains(it)) }
 
             Log.d(tag, "Installing logical partitions into DSU: ${logicalToInstall.joinToString(", ")}")
 

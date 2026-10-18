@@ -37,6 +37,7 @@ import curiousnom.dsusideloader.ui.sdialogs.ConfirmInstallationSheet
 import curiousnom.dsusideloader.ui.sdialogs.DiscardDSUSheet
 import curiousnom.dsusideloader.ui.sdialogs.FastbootInstructionsSheet
 import curiousnom.dsusideloader.ui.sdialogs.ImageSizeWarningSheet
+import curiousnom.dsusideloader.ui.sdialogs.PayloadCustomizerSheet
 import curiousnom.dsusideloader.ui.sdialogs.ViewLogsBottomSheet
 import curiousnom.dsusideloader.ui.util.KeepScreenOn
 import curiousnom.dsusideloader.util.collectAsStateWithLifecycle
@@ -162,6 +163,7 @@ fun Home(
                     onClickViewLogs = homeViewModel::showLogsWarning,
                     onClickViewCommands = { navigate(Destinations.ADBInstallation) },
                     minPercentageOfFreeStorage = minPercentageOfFreeStorage,
+                    onClickCustomizePartitions = homeViewModel::showPayloadCustomizerSheet,
                 )
                 UserdataCard(
                     isEnabled = uiState.isInstalling(),
@@ -221,6 +223,16 @@ fun Home(
 
         SheetDisplayState.FASTBOOT_INSTRUCTIONS ->
             FastbootInstructionsSheet(
+                onDismiss = { homeViewModel.dismissSheet() },
+            )
+
+        SheetDisplayState.PAYLOAD_CUSTOMIZER ->
+            PayloadCustomizerSheet(
+                partitions = uiState.payloadPartitions,
+                selectedPartitions = uiState.selectedPayloadPartitions,
+                onTogglePartition = { homeViewModel.togglePayloadPartition(it) },
+                onSelectAll = { homeViewModel.selectAllPayloadPartitions() },
+                onDeselectAll = { homeViewModel.deselectAllPayloadPartitions() },
                 onDismiss = { homeViewModel.dismissSheet() },
             )
 

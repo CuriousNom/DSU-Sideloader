@@ -13,6 +13,9 @@ data class InstallationCardState(
     val installationProgress: Float = 0F,
     val currentPartitionText: String = "",
     val imageFormatInfo: String = "",
+    val isPayload: Boolean = false,
+    val payloadPartitionsCount: Int = 0,
+    val selectedPartitionsCount: Int = 0,
 )
 
 data class UserDataCardState(
@@ -46,6 +49,7 @@ enum class SheetDisplayState {
     DISCARD_DSU,
     VIEW_LOGS,
     FASTBOOT_INSTRUCTIONS,
+    PAYLOAD_CUSTOMIZER,
 }
 
 data class HomeUiState(
@@ -64,6 +68,8 @@ data class HomeUiState(
     val isStickyEnforced: Boolean = false,
     val isRoot: Boolean = false,
     val isDualBooting: Boolean = true,
+    val payloadPartitions: List<curiousnom.dsusideloader.core.PayloadManager.PayloadPartition> = emptyList(),
+    val selectedPayloadPartitions: Set<String> = emptySet(),
 ) {
     fun isInstalling(): Boolean {
         return installationCard.installationStep != InstallationStep.NOT_INSTALLING

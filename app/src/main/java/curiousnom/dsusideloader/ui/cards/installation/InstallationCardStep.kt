@@ -27,6 +27,7 @@ fun InstallationCardStep(
     onClickViewLogs: () -> Unit,
     onClickViewCommands: () -> Unit,
     isDualBooting: Boolean = true,
+    onClickCustomizePartitions: () -> Unit = {},
 ) {
     when (uiState.installationStep) {
         InstallationStep.NOT_INSTALLING ->
@@ -35,6 +36,7 @@ fun InstallationCardStep(
                 uiState = uiState,
                 onClickClear = onClickClear,
                 onClickInstall = onClickInstall,
+                onClickCustomizePartitions = onClickCustomizePartitions,
             )
         InstallationStep.DSU_ALREADY_INSTALLED ->
             ProgressableCardContent(

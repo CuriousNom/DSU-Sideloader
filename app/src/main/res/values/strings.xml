@@ -291,4 +291,14 @@
     <string name="reboot_to_secondary_dialog_desc">Switch active slot to your secondary OS and reboot?</string>
     <string name="tap_to_reboot_primary">Tap to return to Primary</string>
     <string name="tap_to_boot_secondary">Tap to boot Secondary</string>
+    <string name="done">Done</string>
+    <string name="customize_partitions">Customize Partitions</string>
+    <string name="customize_partitions_title">Customize Payload Partitions</string>
+    <string name="customize_partitions_desc">Select which partitions from this OTA package should be flashed to your device.</string>
+    <string name="select_all">Select All</string>
+    <string name="deselect_all">Deselect All</string>
+    <string name="physical_boot_partitions">Physical Boot Partitions (Target Slot)</string>
+    <string name="logical_dynamic_partitions">Logical Dynamic Partitions (DSU System)</string>
+    <string name="physical_slot_target">Physical Slot</string>
+    <string name="dsu_system_target">DSU Image</string>
 </resources>

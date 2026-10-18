@@ -15,6 +15,7 @@ class UserSelection(
     var userSelectedImageSize: Long = DSUConstants.DEFAULT_IMAGE_SIZE,
     var selectedFileUri: Uri = Uri.EMPTY,
     var selectedFileName: String = "",
+    var selectedPayloadPartitions: Set<String>? = null,
 ) {
 
     fun getUserDataSizeAsGB(): String = "${(this.userSelectedUserdata / 1024L / 1024L / 1024L)}"

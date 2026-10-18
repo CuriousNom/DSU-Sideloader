@@ -36,6 +36,7 @@ fun InstallationCard(
     onClickViewLogs: () -> Unit,
     onClickViewCommands: () -> Unit,
     isDualBooting: Boolean = true,
+    onClickCustomizePartitions: () -> Unit = {},
 ) {
     val chooseFile = remember {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -88,6 +89,7 @@ fun InstallationCard(
             onClickViewCommands = onClickViewCommands,
             minPercentageOfFreeStorage = minPercentageOfFreeStorage,
             isDualBooting = isDualBooting,
+            onClickCustomizePartitions = onClickCustomizePartitions,
         )
     }
 }

@@ -89,13 +89,17 @@ class HomeViewModel @Inject constructor(
     private fun updateSheetState(sheetDisplay: SheetDisplayState) =
         _uiState.update { it.copy(sheetDisplay = sheetDisplay) }
 
-    fun resetInstallationCard() =
+    fun resetInstallationCard() {
+        session.userSelection.selectedPayloadPartitions = null
         _uiState.update {
             it.copy(
                 installationCard = InstallationCardState(),
                 sheetDisplay = SheetDisplayState.NONE,
+                payloadPartitions = emptyList(),
+                selectedPayloadPartitions = emptySet(),
             )
         }
+    }
 
     fun dismissSheet() = updateSheetState(SheetDisplayState.NONE)
 
@@ -367,6 +371,7 @@ class HomeViewModel @Inject constructor(
             userdataSize = session.userSelection.userSelectedUserdata,
             dsuInstallation = session.dsuInstallation,
             installationJob = installationJob,
+            selectedPayloadPartitions = session.userSelection.selectedPayloadPartitions,
             onInstallationError = this::onInstallationError,
             onInstallationProgressUpdate = this::onInstallationProgressUpdate,
             onCreatePartition = this::onCreatePartition,
@@ -690,11 +695,13 @@ class HomeViewModel @Inject constructor(
         session.userSelection.selectedFileName = filename
         session.userSelection.selectedFileUri = uri
         viewModelScope.launch(Dispatchers.IO) {
+            var isPayloadPkg = false
             val formatInfo = try {
                 val isPayloadZip = filename.endsWith(".zip", ignoreCase = true) &&
                     curiousnom.dsusideloader.core.PayloadManager.isPayloadZip(application, uri)
                 val isPayloadBin = filename.endsWith(".bin", ignoreCase = true) &&
                     curiousnom.dsusideloader.core.PayloadManager.isPayloadBin(application, uri)
+                isPayloadPkg = isPayloadZip || isPayloadBin
 
                 when {
                     isPayloadZip -> ImageInspector.ImageFormat.PAYLOAD_ZIP.displayName
@@ -706,14 +713,71 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception) {
                 ""
             }
+
+            var detectedPartitions = emptyList<curiousnom.dsusideloader.core.PayloadManager.PayloadPartition>()
+            if (isPayloadPkg) {
+                val realPath = curiousnom.dsusideloader.core.PayloadManager.getRealPath(application, uri)
+                if (realPath != null) {
+                    val rawPartitions = curiousnom.dsusideloader.core.PayloadManager.listPartitions(application, realPath)
+                    detectedPartitions = rawPartitions.filter { curiousnom.dsusideloader.core.SlotPartitionManager.isSupportedPartition(it.name) }
+                    val allSet = detectedPartitions.map { it.name }.toSet()
+                    session.userSelection.selectedPayloadPartitions = allSet
+                    _uiState.update {
+                        it.copy(
+                            payloadPartitions = detectedPartitions,
+                            selectedPayloadPartitions = allSet,
+                        )
+                    }
+                }
+            }
+
+            val totalPartitions = detectedPartitions.size
             updateInstallationCard {
                 it.copy(
                     text = filename,
                     isTextFieldEnabled = false,
                     isInstallable = true,
                     imageFormatInfo = formatInfo,
+                    isPayload = isPayloadPkg && totalPartitions > 0,
+                    payloadPartitionsCount = totalPartitions,
+                    selectedPartitionsCount = totalPartitions,
                 )
             }
+        }
+    }
+
+    fun showPayloadCustomizerSheet() {
+        updateSheetState(SheetDisplayState.PAYLOAD_CUSTOMIZER)
+    }
+
+    fun togglePayloadPartition(partitionName: String) {
+        val current = _uiState.value.selectedPayloadPartitions.toMutableSet()
+        if (current.contains(partitionName)) {
+            current.remove(partitionName)
+        } else {
+            current.add(partitionName)
+        }
+        session.userSelection.selectedPayloadPartitions = current
+        _uiState.update { it.copy(selectedPayloadPartitions = current) }
+        updateInstallationCard {
+            it.copy(selectedPartitionsCount = current.size)
+        }
+    }
+
+    fun selectAllPayloadPartitions() {
+        val all = _uiState.value.payloadPartitions.map { it.name }.toSet()
+        session.userSelection.selectedPayloadPartitions = all
+        _uiState.update { it.copy(selectedPayloadPartitions = all) }
+        updateInstallationCard {
+            it.copy(selectedPartitionsCount = all.size)
+        }
+    }
+
+    fun deselectAllPayloadPartitions() {
+        session.userSelection.selectedPayloadPartitions = emptySet()
+        _uiState.update { it.copy(selectedPayloadPartitions = emptySet()) }
+        updateInstallationCard {
+            it.copy(selectedPartitionsCount = 0)
         }
     }
 
