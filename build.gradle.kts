@@ -17,8 +17,8 @@ plugins {
     id("org.jmailen.kotlinter") apply false
 }
 
-val versionCode by extra { 9 }
-val versionName by extra { "3.0" }
+val versionCode by extra { 10 }
+val versionName by extra { "3.1" }
 val packageName by extra { "curiousnom.dsusideloader" }
 
 task("clean") {
