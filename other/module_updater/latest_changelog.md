@@ -7,4 +7,4 @@
 - Modernized card boxes, pill buttons, preference rows, dialogs, and bottom sheets.
 - Enhanced contrast and edge-to-edge system bar presentation.
 
-Read more at: https://github.com/CuriousNom/DSU-Sideloader/releases/tag/v3.0
+Read more at: https://github.com/CuriousNom/DSU-Sideloader/releases/tag/3.0
