@@ -120,6 +120,9 @@ class DSUInstaller(
         } catch (e: Exception) {
             Log.w(tag, "Rollback warning: ${e.message}")
         }
+        try {
+            File(application.cacheDir, "payload_extracted").deleteRecursively()
+        } catch (_: Exception) {}
     }
 
     private fun installWritablePartition(
