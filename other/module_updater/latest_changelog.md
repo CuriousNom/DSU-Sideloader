@@ -1,10 +1,11 @@
-### DSU Sideloader v3.0 (9)
+### DSU Sideloader v3.1 (10)
 
-- Modernized UI according to Material 3 (Material You) styling.
-- Full dynamic Monet wallpaper-based theming across all screens and components.
-- Brand new adaptive launcher vector icon with dynamic Monet colors and Android 13+ monochrome themed icon layer.
-- Cleaned legacy raster assets and upgraded build toolchain to compileSdk 34 and Java 17/21.
-- Modernized card boxes, pill buttons, preference rows, dialogs, and bottom sheets.
-- Enhanced contrast and edge-to-edge system bar presentation.
+- **Dynamic A/B Slot Dual-Boot Environment**: Fully dynamic active slot detection (`_a`/`_b`) without hardcoding, automatically establishing the secondary OS environment on the opposite slot.
+- **Interactive Quick Settings Tile Switcher**: One-tap toggle directly switches active slots and reboots between Primary and Secondary OS with a confirmation dialog.
+- **OTA Payload Partition Customizer**: Interactive partition inspector and selector for OTA ROM payloads (Evolution X, LineageOS, PixelOS, etc.), categorizing into Physical Boot Partitions and Logical Dynamic Partitions.
+- **Automated Secondary Boot Partitions Backup & Restore**: Automatically backs up physical boot partitions (`boot`, `init_boot`, `vendor_boot`, `dtbo`, etc.) before flashing and restores them cleanly upon discarding.
+- **OTA Full ROM Package Installer**: Native high-speed extraction and flashing of complex multi-partition OTA packages via direct low-level DSU APIs.
+- **UI Performance & High Refresh Rate**: Optimized background file inspection and silky smooth 120Hz/144Hz scroll responsiveness.
+- **Dual Boot Settings Integration**: Automatically locks and greys out conflicting persistent boot preferences when dual boot mode is engaged.
 
-Read more at: https://github.com/CuriousNom/DSU-Sideloader/releases/tag/3.0
+Read more at: https://github.com/CuriousNom/DSU-Sideloader/releases/tag/3.1

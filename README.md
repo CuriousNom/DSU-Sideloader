@@ -23,10 +23,15 @@ A modern, open-source tool to easily install and test Generic System Images (GSI
   - **Root**: Fully automated 1-tap installation, boot, and discard directly inside the app.
   - **Shizuku**: Automated installation flow without requiring full root access.
   - **ADB**: Non-root installation helper generating streamlined shell commands.
-- 🔄 **Sticky Mode Toggle**: Switch between temporary one-shot boot and persistent DSU boots directly from Settings.
-- 🔍 **Image & Filesystem Inspector**: Automatic header inspection detecting **EROFS**, **ext4**, **Android Sparse (`simg`)**, and compressed archives (`.xz`, `.gz`, `.zip`).
+- 🔀 **Dynamic A/B Slot Dual-Boot**: Seamless dual-boot environment dynamically configuring the inactive slot (`_a`/`_b`), allowing effortless switching between your primary stock OS and a secondary guest OS.
+- 🎛️ **Interactive Quick Settings Tile**: Direct OS switcher in your notification shade — tap to switch active slots and reboot between Primary and Secondary OS with a single confirmation.
+- 📦 **OTA Payload & Full ROM Support**: Direct installation of complete OTA update packages (`payload.bin` and ROM ZIPs like Evolution X, LineageOS, PixelOS).
+- 🧩 **Payload Partition Customizer**: Interactive bottom sheet customizer to inspect and selectively flash physical boot partitions (to the target physical slot) and logical dynamic partitions (into DSU).
+- 🛡️ **Automated Boot Partition Safeguards**: Automatically backs up secondary slot boot partitions (`boot`, `init_boot`, `vendor_boot`, `dtbo`) to `/sdcard/DSU_Backup/` before flashing, with automatic restoration when discarding.
+- 🔄 **Sticky Mode Toggle**: Switch between temporary one-shot boot and persistent DSU boots directly from Settings or the Dual Boot card.
+- 🔍 **Image & Filesystem Inspector**: Automatic asynchronous header inspection detecting **EROFS**, **ext4**, **Android Sparse (`simg`)**, and compressed archives (`.xz`, `.gz`, `.zip`).
 - 🧠 **16 KB Memory Page Size Support**: Kernel detection and compatibility advisories for modern 16 KB kernels on Android 15+.
-- 📱 **Quick Settings Tile**: Live DSU status and quick reboot/discard right from your quick settings shade.
+- 🚀 **High-Refresh Performance**: Silky smooth 120Hz/144Hz scrolling and non-blocking background initialization.
 - 📤 **One-Tap Share**: Instant Android Share sheet for ADB installation scripts and logcat logs.
 
 ---
