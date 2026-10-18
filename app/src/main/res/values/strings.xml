@@ -286,5 +286,9 @@
     <string name="fastboot_commands">fastboot --set-active=%1$s\nfastboot reboot fastboot\nfastboot gsi disable\nfastboot reboot</string>
     <string name="copy_commands">Copy Commands</string>
     <string name="commands_copied">Commands copied to clipboard</string>
-    <string name="fastboot_guide">Fastboot Guide</string>
+    <string name="reboot">Reboot</string>
+    <string name="reboot_to_primary_dialog_desc">Switch active slot back to your primary OS and reboot?</string>
+    <string name="reboot_to_secondary_dialog_desc">Switch active slot to your secondary OS and reboot?</string>
+    <string name="tap_to_reboot_primary">Tap to return to Primary</string>
+    <string name="tap_to_boot_secondary">Tap to boot Secondary</string>
 </resources>
