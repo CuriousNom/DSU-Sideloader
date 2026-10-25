@@ -93,11 +93,13 @@ class StorageManager(
     }
 
     fun cleanWorkspaceFolder(deleteAlsoGzFile: Boolean) {
-        for (file in getWorkspaceFolder().listFiles()) {
-            if (deleteAlsoGzFile || !file.name.toString().endsWith("gz")) {
-                file.delete()
+        try {
+            for (file in getWorkspaceFolder().listFiles()) {
+                if (deleteAlsoGzFile || !file.name.toString().endsWith("gz")) {
+                    file.delete()
+                }
             }
-        }
+        } catch (_: Exception) {}
     }
 
     private fun copyFileToSafFolder(inputFile: Uri): Uri {

@@ -2,7 +2,6 @@ package curiousnom.dsusideloader.util
 
 import android.content.ContentResolver
 import android.content.Context
-import android.database.Cursor
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.documentfile.provider.DocumentFile
@@ -48,12 +47,16 @@ class FilenameUtils {
         }
 
         fun queryName(resolver: ContentResolver, uri: Uri): String {
-            val returnCursor: Cursor = resolver.query(uri, null, null, null, null)!!
-            val nameIndex: Int = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            returnCursor.moveToFirst()
-            val name: String = returnCursor.getString(nameIndex)
-            returnCursor.close()
-            return name
+            try {
+                resolver.query(uri, null, null, null, null)?.use { returnCursor ->
+                    val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex != -1 && returnCursor.moveToFirst()) {
+                        val name = returnCursor.getString(nameIndex)
+                        if (!name.isNullOrEmpty()) return name
+                    }
+                }
+            } catch (_: Exception) {}
+            return uri.lastPathSegment ?: "unknown.img"
         }
 
         fun getDigits(input: String): String {
@@ -61,7 +64,46 @@ class FilenameUtils {
         }
 
         fun getLengthFromFile(context: Context, uri: Uri): Long {
-            return DocumentFile.fromSingleUri(context, uri)!!.length()
+            // 1. Try DocumentFile
+            try {
+                val doc = DocumentFile.fromSingleUri(context, uri)
+                val len = doc?.length() ?: 0L
+                if (len > 0L) return len
+            } catch (_: Exception) {}
+
+            // 2. Try ContentResolver openFileDescriptor statSize
+            try {
+                context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                    val stat = pfd.statSize
+                    if (stat > 0L) return stat
+                }
+            } catch (_: Exception) {}
+
+            // 3. Try OpenableColumns.SIZE query
+            try {
+                context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        if (idx != -1 && !cursor.isNull(idx)) {
+                            val size = cursor.getLong(idx)
+                            if (size > 0L) return size
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+
+            // 4. Try resolving real file path via PayloadManager / direct file
+            try {
+                val realPath = curiousnom.dsusideloader.core.PayloadManager.getRealPath(context, uri)
+                if (realPath != null) {
+                    val file = java.io.File(realPath)
+                    if (file.exists() && file.length() > 0L) {
+                        return file.length()
+                    }
+                }
+            } catch (_: Exception) {}
+
+            return 0L
         }
     }
 }

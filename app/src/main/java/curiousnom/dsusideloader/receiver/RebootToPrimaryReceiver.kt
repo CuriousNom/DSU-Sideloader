@@ -30,7 +30,11 @@ class RebootToPrimaryReceiver : BroadcastReceiver() {
                     if (switched) {
                         DualBootNotificationHelper.dismissNotification(context)
                         Log.d(TAG, "Switched active slot to primary slot ($primarySlot)")
-                        Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
+                        Shell.cmd(
+                            "killall -9 gsi_tool 2>/dev/null || true",
+                            "printf 'y\\n' | gsi_tool disable 2>/dev/null || true",
+                            "svc power reboot || reboot || setprop sys.powerctl reboot",
+                        ).exec()
                     } else {
                         Log.e(TAG, "Cannot reboot to primary OS: slot switch failed (root required)")
                         val openAppIntent = Intent(context, curiousnom.dsusideloader.MainActivity::class.java).apply {

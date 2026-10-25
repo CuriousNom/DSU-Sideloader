@@ -131,14 +131,12 @@ class HomeViewModel @Inject constructor(
             }
         } else {
             DualBootNotificationHelper.dismissNotification(application)
+            DualBootNotificationHelper.restoreOfficialDsuService()
             checkInstalledDsu()
         }
 
         val hasPhysicalSlot = SlotPartitionManager.hasSecondaryPhysicalSlot()
         val isDualBoot = hasPhysicalSlot || SlotPartitionManager.isAbDevice()
-        if (isDualBoot) {
-            DualBootNotificationHelper.suppressOfficialDsuNotification()
-        }
         _uiState.update {
             it.copy(
                 isStickyDsu = if (hasPhysicalSlot) true else it.isStickyDsu,
@@ -153,15 +151,19 @@ class HomeViewModel @Inject constructor(
             PrivilegedProvider.run {
                 val inUse = isInUse
                 val installed = isInstalled
-                _uiState.update { it.copy(isDsuRunning = inUse, isDsuInstalled = installed) }
-                if (inUse) {
+                val running = SlotPartitionManager.isRunningInDsu()
+                _uiState.update { it.copy(isDsuRunning = running, isDsuInstalled = installed) }
+                if (running) {
                     DualBootNotificationHelper.suppressOfficialDsuNotification()
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
                     return@run
                 }
                 if (installed) {
-                    DualBootNotificationHelper.suppressOfficialDsuNotification()
                     updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_INSTALLED) }
+                    return@run
+                }
+                if (inUse) {
+                    updateInstallationCard { it.copy(installationStep = InstallationStep.DSU_ALREADY_RUNNING_DYN_OS) }
                     return@run
                 }
             }
@@ -462,20 +464,27 @@ class HomeViewModel @Inject constructor(
                 SlotPartitionManager.hasSecondaryPhysicalSlot()
 
             if (hasPhysicalSlot && SlotPartitionManager.isAbDevice()) {
+                SlotPartitionManager.ensureBootctlExtracted(application)
                 val targetSlot = SlotPartitionManager.getSecondarySlotIndex()
-                SlotPartitionManager.setActiveBootSlot(targetSlot)
-                Log.d(tag, "RebootToDynOS: Switched active slot to $targetSlot")
+                val switched = SlotPartitionManager.setActiveBootSlot(targetSlot)
+                Log.d(tag, "RebootToDynOS: Switched active slot to $targetSlot (result=$switched)")
             }
+
             try {
-                PrivilegedProvider.run {
-                    setEnable(true, false)
+                if (PrivilegedProvider.isConnected()) {
+                    val enabled = PrivilegedProvider.getService().setEnable(true, false)
+                    Log.d(tag, "PrivilegedProvider setEnable(true, false) result: $enabled")
                 }
             } catch (e: Exception) {
                 Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
             }
-            // In AOSP gsi_tool, -s stands for --single-boot (one-shot).
-            // Calling 'gsi_tool enable' without -s enables persistent sticky mode across reboots!
-            Shell.cmd("gsi_tool enable", "svc power reboot || reboot").exec()
+
+            // Kill any hanging gsi_tool and reboot immediately
+            Log.d(tag, "RebootToDynOS: Triggering reboot...")
+            Shell.cmd(
+                "killall -9 gsi_tool 2>/dev/null || true",
+                "svc power reboot || reboot || setprop sys.powerctl reboot",
+            ).exec()
         }
     }
 
@@ -507,13 +516,17 @@ class HomeViewModel @Inject constructor(
             }
             DualBootNotificationHelper.dismissNotification(application)
             try {
-                PrivilegedProvider.run {
-                    setEnable(false, false)
+                if (PrivilegedProvider.isConnected()) {
+                    PrivilegedProvider.getService().setEnable(false, false)
                 }
             } catch (e: Exception) {
                 Log.e(tag, "PrivilegedProvider setEnable error: ${e.message}")
             }
-            Shell.cmd("gsi_tool disable", "svc power reboot || reboot").exec()
+            Shell.cmd(
+                "killall -9 gsi_tool 2>/dev/null || true",
+                "printf 'y\\n' | gsi_tool disable 2>/dev/null || true",
+                "svc power reboot || reboot || setprop sys.powerctl reboot",
+            ).exec()
         }
     }
 
@@ -528,11 +541,17 @@ class HomeViewModel @Inject constructor(
             }
             SlotPartitionManager.setSecondaryPhysicalSlot(false)
             updateBoolPref(AppPrefs.FLASHED_SECONDARY_BOOT_SLOT, false)
-            PrivilegedProvider.run {
-                remove()
-                forceStopPackage("com.android.dynsystem")
-                startDSUInstallation()
+            try {
+                PrivilegedProvider.run {
+                    remove()
+                    forceStopPackage("com.android.dynsystem")
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error removing DSU: ${e.message}")
             }
+            Shell.cmd("gsi_tool wipe").exec()
+            _uiState.update { it.copy(isDsuInstalled = false, isDsuRunning = false) }
+            startInstallation()
         }
     }
 
@@ -694,6 +713,17 @@ class HomeViewModel @Inject constructor(
 
         session.userSelection.selectedFileName = filename
         session.userSelection.selectedFileUri = uri
+
+        // Update card immediately so UI reflects selection instantly
+        updateInstallationCard {
+            it.copy(
+                text = filename,
+                isTextFieldEnabled = false,
+                isInstallable = true,
+                imageFormatInfo = "",
+            )
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
             var isPayloadPkg = false
             val formatInfo = try {
@@ -706,6 +736,7 @@ class HomeViewModel @Inject constructor(
                 when {
                     isPayloadZip -> ImageInspector.ImageFormat.PAYLOAD_ZIP.displayName
                     isPayloadBin -> ImageInspector.ImageFormat.PAYLOAD.displayName
+                    filename.endsWith(".zip", ignoreCase = true) -> ImageInspector.ImageFormat.ZIP.displayName
                     else -> application.contentResolver.openInputStream(uri)?.use { stream ->
                         ImageInspector.inspect(stream).displayName
                     } ?: ""
@@ -728,6 +759,14 @@ class HomeViewModel @Inject constructor(
                             selectedPayloadPartitions = allSet,
                         )
                     }
+                }
+            } else {
+                session.userSelection.selectedPayloadPartitions = null
+                _uiState.update {
+                    it.copy(
+                        payloadPartitions = emptyList(),
+                        selectedPayloadPartitions = emptySet(),
+                    )
                 }
             }
 

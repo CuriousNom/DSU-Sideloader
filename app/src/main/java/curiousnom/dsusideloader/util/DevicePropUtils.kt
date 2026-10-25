@@ -1,6 +1,5 @@
 package curiousnom.dsusideloader.util
 
-import curiousnom.dsusideloader.service.PrivilegedProvider
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import org.lsposed.hiddenapibypass.HiddenApiBypass
@@ -105,22 +104,26 @@ class DevicePropUtils {
         }
 
         fun isDsuRunning(): Boolean {
-            val imageInstalled = getSystemProperty("ro.gsid.image_installed", cache = false)
             val dsuSlot = getSystemProperty("ro.boot.dsu_slot")
-            if (imageInstalled == "1" || dsuSlot.isNotEmpty()) {
+            if (dsuSlot.isNotEmpty()) {
+                return true
+            }
+            val dsuSlotSuffix = getSystemProperty("ro.boot.dsu_slot_suffix")
+            if (dsuSlotSuffix.isNotEmpty()) {
+                return true
+            }
+            val sysDsuSlot = getSystemProperty("sys.gsi.dsu_slot")
+            if (sysDsuSlot.isNotEmpty()) {
                 return true
             }
             if (hasDsuMounts()) {
                 return true
             }
-            if (PrivilegedProvider.isConnected()) {
-                try {
-                    if (PrivilegedProvider.connection.SERVICE?.isInUse == true) {
-                        return true
-                    }
-                } catch (_: Exception) {}
-            }
             return false
+        }
+
+        fun isDsuInstalled(): Boolean {
+            return getSystemProperty("ro.gsid.image_installed", cache = false) == "1"
         }
 
         private val cachedActiveSlot: String by lazy {

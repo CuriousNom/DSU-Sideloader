@@ -32,9 +32,17 @@ class Preparation(
     private fun prepareRooted() {
         val source: DSUInstallationSource = when (getExtension(userSelectedFileUri)) {
             "img" -> {
+                var size = if (userSelectedImageSize > 0L && userSelectedImageSize != DSUConstants.DEFAULT_IMAGE_SIZE) {
+                    userSelectedImageSize
+                } else {
+                    storageManager.getFilesizeFromUri(userSelectedFileUri)
+                }
+                if (size <= 0L && userSelectedImageSize > 0L) {
+                    size = userSelectedImageSize
+                }
                 DSUInstallationSource.SingleSystemImage(
                     userSelectedFileUri,
-                    storageManager.getFilesizeFromUri(userSelectedFileUri),
+                    size,
                 )
             }
 
@@ -192,5 +200,6 @@ class Preparation(
     private fun getExtension(uri: Uri): String {
         return storageManager.getFilenameFromUri(uri)
             .substringAfterLast(".", "")
+            .lowercase()
     }
 }

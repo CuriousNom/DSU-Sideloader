@@ -21,6 +21,10 @@ object DualBootNotificationHelper {
     private const val NOTIFICATION_ID = 4001
 
     fun suppressOfficialDsuNotification() {
+        if (!curiousnom.dsusideloader.core.SlotPartitionManager.isRunningInDsu()) {
+            Log.d(TAG, "suppressOfficialDsuNotification skipped: not running inside guest OS")
+            return
+        }
         if (PrivilegedProvider.isConnected()) {
             try {
                 PrivilegedProvider.getService().forceStopPackage("com.android.dynsystem")
@@ -32,10 +36,25 @@ object DualBootNotificationHelper {
                     "am force-stop com.android.dynsystem 2>/dev/null",
                     "pm disable-user --user 0 com.android.dynsystem 2>/dev/null || pm disable com.android.dynsystem 2>/dev/null",
                 ).submit { result ->
-                    Log.d(TAG, "Suppressed official DSU notification (exitCode: ${result.code})")
+                    Log.d(TAG, "Suppressed official DSU notification in guest OS (exitCode: ${result.code})")
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to suppress official DSU notification: ${e.message}")
+            }
+        }
+    }
+
+    fun restoreOfficialDsuService() {
+        if (OperationModeUtils.isSuAvailable()) {
+            try {
+                Shell.cmd(
+                    "pm enable com.android.dynsystem 2>/dev/null",
+                    "pm enable --user 0 com.android.dynsystem 2>/dev/null",
+                ).submit { result ->
+                    Log.d(TAG, "Restored official DSU service (exitCode: ${result.code})")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to restore official DSU service: ${e.message}")
             }
         }
     }

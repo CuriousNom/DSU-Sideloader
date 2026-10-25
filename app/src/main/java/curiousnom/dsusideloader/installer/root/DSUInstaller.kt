@@ -14,6 +14,7 @@ import curiousnom.dsusideloader.model.Type
 import curiousnom.dsusideloader.preparation.InstallationStep
 import curiousnom.dsusideloader.service.PrivilegedProvider
 import curiousnom.dsusideloader.util.DualBootNotificationHelper
+import curiousnom.dsusideloader.util.FilenameUtils
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -190,7 +191,16 @@ class DSUInstaller(
             val sis = SparseInputStream(
                 BufferedInputStream(inputStream),
             )
-            val partitionSize = if (sis.unsparseSize != -1L) sis.unsparseSize else uncompressedSize
+            var partitionSize = if (sis.unsparseSize != -1L) sis.unsparseSize else uncompressedSize
+            if (partitionSize <= 0L) {
+                Log.e(tag, "Invalid partition size for $partition: $partitionSize")
+                safeRollback()
+                onInstallationError(InstallationStep.ERROR_CREATE_PARTITION, "$partition (invalid size: $partitionSize)")
+                return false
+            }
+            if (partitionSize % 4096L != 0L) {
+                partitionSize = ((partitionSize + 4095L) / 4096L) * 4096L
+            }
             onCreatePartition(partition)
             if (!createNewPartition(partition, partitionSize, readOnly) || installationJob.isCancelled) {
                 safeRollback()
@@ -260,7 +270,19 @@ class DSUInstaller(
         }
     }
 
-    private fun installStreamingZipUpdate(inputStream: InputStream): Boolean {
+    private fun installStreamingZipUpdate(uri: Uri): Boolean {
+        val entrySizes = PayloadManager.getZipEntrySizes(application, uri)
+        val stream = openInputStream(uri) ?: run {
+            Log.e(tag, "Cannot open stream for $uri")
+            onInstallationError(InstallationStep.ERROR_CREATE_PARTITION, "cannot read zip")
+            return false
+        }
+        return stream.use { inputStream ->
+            installStreamingZipUpdate(inputStream, entrySizes)
+        }
+    }
+
+    private fun installStreamingZipUpdate(inputStream: InputStream, entrySizes: Map<String, Long> = emptyMap()): Boolean {
         try {
             val zis = ZipInputStream(inputStream)
             var entry: ZipEntry?
@@ -289,7 +311,42 @@ class DSUInstaller(
                         Log.w(tag, "Failed or skipped physical partition $partitionName.")
                     }
                 } else if (shouldInstallEntry(fileName)) {
-                    val ok = installImageFromAnEntry(currentEntry, zis)
+                    var realSize = entrySizes[currentEntry.name]
+                        ?: entrySizes[currentEntry.name.lowercase()]
+                        ?: entrySizes[fileName]
+                        ?: entrySizes[fileName.lowercase()]
+                        ?: entrySizes[partitionName]
+                        ?: entrySizes["$partitionName.img"]
+                        ?: currentEntry.size
+
+                    if (realSize <= 0L) {
+                        Log.w(tag, "Size unknown for $partitionName, buffering entry to disk to determine size...")
+                        val tmpFile = File(application.cacheDir, "temp_$partitionName.img")
+                        try {
+                            java.io.FileOutputStream(tmpFile).use { outStream ->
+                                zis.copyTo(outStream)
+                            }
+                            realSize = tmpFile.length()
+                            Log.d(tag, "Buffered $partitionName: size=$realSize bytes")
+                            val ok = FileInputStream(tmpFile).use { inStream ->
+                                installImage(partitionName, realSize, inStream)
+                            }
+                            tmpFile.delete()
+                            if (!ok || installationJob.isCancelled) {
+                                safeRollback()
+                                return false
+                            }
+                            continue
+                        } catch (e: Exception) {
+                            tmpFile.delete()
+                            Log.e(tag, "Failed to buffer and install $partitionName: ${e.message}", e)
+                            safeRollback()
+                            onInstallationError(InstallationStep.ERROR_CREATE_PARTITION, "$partitionName (buffer failed: ${e.message})")
+                            return false
+                        }
+                    }
+
+                    val ok = installImage(partitionName, realSize, zis)
                     if (!ok || installationJob.isCancelled) {
                         safeRollback()
                         return false
@@ -449,12 +506,12 @@ class DSUInstaller(
     private fun startInstallation() {
         try {
             PrivilegedProvider.getService().setDynProp()
-            if (isInUse) {
-                onInstallationError(InstallationStep.ERROR_ALREADY_RUNNING_DYN_OS, "")
-                return
-            }
             if (isInstalled) {
                 onInstallationError(InstallationStep.ERROR_REQUIRES_DISCARD_DSU, "")
+                return
+            }
+            if (isInUse) {
+                onInstallationError(InstallationStep.ERROR_ALREADY_RUNNING_DYN_OS, "")
                 return
             }
             DualBootNotificationHelper.suppressOfficialDsuNotification()
@@ -484,11 +541,39 @@ class DSUInstaller(
 
             val imageOk = when (dsuInstallation.type) {
                 Type.SINGLE_SYSTEM_IMAGE -> {
-                    installImage(
-                        "system",
-                        dsuInstallation.fileSize,
-                        dsuInstallation.uri,
-                    )
+                    val rawName = FilenameUtils.queryName(application.contentResolver, dsuInstallation.uri)
+                        .substringBeforeLast(".")
+                        .lowercase()
+                    if (SlotPartitionManager.isPhysicalPartition(rawName)) {
+                        val targetSlotName = "Slot ${SlotPartitionManager.getTargetSlotSuffix().trimStart('_').uppercase()}"
+                        Log.d(tag, "Flashing single physical partition $rawName to $targetSlotName...")
+                        onInstallationStepUpdate(InstallationStep.INSTALLING_ROOTED)
+                        val ok = openInputStream(dsuInstallation.uri)?.use { stream ->
+                            SlotPartitionManager.flashPhysicalPartition(
+                                partitionName = rawName,
+                                inputStream = stream,
+                                cacheDir = application.cacheDir,
+                            )
+                        } ?: false
+                        if (ok) {
+                            SlotPartitionManager.setSecondaryPhysicalSlot(true)
+                            onInstallationProgressUpdate(1f, "$rawName ($targetSlotName)")
+                        }
+                        ok
+                    } else {
+                        val targetPartition = when {
+                            isPartitionSupported(rawName) -> rawName
+                            rawName.startsWith("system") -> "system"
+                            rawName.startsWith("vendor") -> "vendor"
+                            rawName.startsWith("product") -> "product"
+                            else -> "system"
+                        }
+                        installImage(
+                            targetPartition,
+                            dsuInstallation.fileSize,
+                            dsuInstallation.uri,
+                        )
+                    }
                 }
 
                 Type.MULTIPLE_IMAGES -> {
@@ -496,9 +581,7 @@ class DSUInstaller(
                 }
 
                 Type.DSU_PACKAGE -> {
-                    openInputStream(dsuInstallation.uri)?.use { stream ->
-                        installStreamingZipUpdate(stream)
-                    } ?: false
+                    installStreamingZipUpdate(dsuInstallation.uri)
                 }
 
                 Type.PAYLOAD -> {
@@ -551,6 +634,10 @@ class DSUInstaller(
     }
 
     private fun installImage(partitionName: String, uncompressedSize: Long, uri: Uri): Boolean {
+        var size = uncompressedSize
+        if (size <= 0L) {
+            size = FilenameUtils.getLengthFromFile(application, uri)
+        }
         val stream = openInputStream(uri) ?: run {
             Log.e(tag, "Cannot open stream for $uri")
             installationJob.cancel()
@@ -561,7 +648,7 @@ class DSUInstaller(
         val result = stream.use {
             installImage(
                 partitionName,
-                uncompressedSize,
+                size,
                 it,
             )
         }

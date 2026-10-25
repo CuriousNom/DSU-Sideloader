@@ -54,7 +54,7 @@ class FileUnPacker(
 
     fun unpack(): Pair<Uri, Long> {
         val archiveInputStream =
-            with(storageManager.getFilenameFromUri(inputFile)) {
+            with(storageManager.getFilenameFromUri(inputFile).lowercase()) {
                 when {
                     endsWith("xz") -> XZCompressorInputStream(inputStream)
                     endsWith("gz") -> GzipCompressorInputStream(inputStream)
@@ -70,7 +70,7 @@ class FileUnPacker(
     }
 
     private fun updateProgress(fileSize: Long, readed: Long) {
-        val percent: Float = readed.toFloat() / fileSize.toFloat()
+        val percent: Float = if (fileSize > 0L) readed.toFloat() / fileSize.toFloat() else 0f
         onProgressChange(percent)
     }
 }

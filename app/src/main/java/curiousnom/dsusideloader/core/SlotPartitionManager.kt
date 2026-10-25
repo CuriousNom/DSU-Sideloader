@@ -444,13 +444,12 @@ object SlotPartitionManager {
             dest.setExecutable(true, false)
             Log.d(TAG, "Extracted bootctl to ${dest.absolutePath}")
 
-            try {
-                val tmpDest = File("/data/local/tmp/bootctl")
-                if (!tmpDest.exists() || tmpDest.length() == 0L) {
-                    dest.copyTo(tmpDest, overwrite = true)
-                    tmpDest.setExecutable(true, false)
-                }
-            } catch (_: Exception) {}
+            if (Shell.isAppGrantedRoot() == true) {
+                Shell.cmd(
+                    "cp '${dest.absolutePath}' /data/local/tmp/bootctl",
+                    "chmod 755 /data/local/tmp/bootctl",
+                ).exec()
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract bundled bootctl: ${e.message}")
         }
